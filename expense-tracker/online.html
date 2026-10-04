@@ -2407,6 +2407,24 @@ If the image is not a bill or receipt, reply {"isBill": false}.`;
       return y + 19;
     }
 
+    function categoryTable(exp, y) {
+      const spent = sum(exp);
+      const byCat = {};
+      for (const e of exp) {
+        const c = byCat[e.category] || (byCat[e.category] = { amount: 0, bills: 0 });
+        c.amount += e.amount; c.bills++;
+      }
+      const cats = Object.entries(byCat).sort((a, b) => b[1].amount - a[1].amount);
+      y = heading("Spend by category", y);
+      doc.autoTable({ ...tableStyle, startY: y,
+        head: [["Category", "Bills", "Amount", "Share"]],
+        body: cats.map(([n, c]) => [n, String(c.bills), pdfMoney(c.amount), Math.round((c.amount / spent) * 100) + "%"]),
+        foot: [["Total spent", String(exp.length), pdfMoney(spent), "100%"]],
+        columnStyles: { 1: { halign: "right", cellWidth: 20 }, 2: { halign: "right", cellWidth: 40 }, 3: { halign: "right", cellWidth: 22 } },
+        didParseCell: d => { if (d.column.index > 0) d.cell.styles.halign = "right"; } });
+      return doc.lastAutoTable.finalY + 9;
+    }
+
     if (!single) {
       let y = header("Client summary");
       doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(...NAVY);
@@ -2427,6 +2445,8 @@ If the image is not a bill or receipt, reply {"isBill": false}.`;
         foot: [["Total", pdfMoney(rec), pdfMoney(sp), pdfMoney(rec - sp)]],
         columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
         didParseCell: d => { if (d.column.index > 0 && d.section !== "body") d.cell.styles.halign = "right"; } });
+      const allExp = state.expenses.filter(e => inP(e.date) && ids.includes(e.clientId));
+      if (allExp.length) categoryTable(allExp, doc.lastAutoTable.finalY + 10);
     }
 
     ids.forEach((id, i) => {
@@ -2448,48 +2468,11 @@ If the image is not a bill or receipt, reply {"isBill": false}.`;
       doc.setFontSize(8.5); doc.setTextColor(...GREY);
       doc.text(doc.splitTextToSize(proj, W - 2 * M), M, y); y += 10;
 
-      if (!pay.length && !exp.length) {
-        doc.setFontSize(10); doc.text("No bills or payments in this period.", M, y);
+      if (!exp.length) {
+        doc.setFontSize(10); doc.text("No bills in this period.", M, y);
         return;
       }
-      if (pay.length) {
-        y = heading("Payments received", y);
-        doc.autoTable({ ...tableStyle, startY: y,
-          head: [["Date", "Details", "Received via", "Amount"]],
-          body: pay.map(p => [fmtDay(p.date), pdfSafe([p.note || "Payment", p.ref ? "Ref " + p.ref : ""].filter(Boolean).join(" · ")), p.method, pdfMoney(p.amount)]),
-          foot: [["", "", "Total received", pdfMoney(rec)]],
-          columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 32 }, 3: { halign: "right", cellWidth: 32 } },
-          didParseCell: d => { if (d.column.index === 3) d.cell.styles.halign = "right"; } });
-        y = doc.lastAutoTable.finalY + 9;
-      }
-      if (exp.length) {
-        y = heading("Bills & expenses", y);
-        doc.autoTable({ ...tableStyle, startY: y,
-          head: [["Date", "Vendor / bill", "Items", "Category", "Amount"]],
-          body: exp.map(e => [
-            fmtDay(e.date),
-            pdfSafe([e.vendor || "-", e.bill ? "Bill " + e.bill : "", e.note].filter(Boolean).join("\n")),
-            pdfSafe(e.lines.map(lineLabel).filter(Boolean).join(", ") || "-"),
-            e.category,
-            pdfMoney(e.amount)
-          ]),
-          foot: [["", "", "", "Total spent", pdfMoney(sp)]],
-          columnStyles: { 0: { cellWidth: 24 }, 1: { cellWidth: 40 }, 3: { cellWidth: 32 }, 4: { halign: "right", cellWidth: 28 } },
-          didParseCell: d => { if (d.column.index === 4) d.cell.styles.halign = "right"; } });
-        y = doc.lastAutoTable.finalY + 9;
-
-        const byCat = {};
-        for (const e of exp) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
-        const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
-        if (cats.length > 1) {
-          y = heading("Spend by category", y);
-          doc.autoTable({ ...tableStyle, startY: y, tableWidth: 110,
-            head: [["Category", "Amount", "Share"]],
-            body: cats.map(([n, a]) => [n, pdfMoney(a), Math.round((a / sp) * 100) + "%"]),
-            columnStyles: { 1: { halign: "right" }, 2: { halign: "right", cellWidth: 18 } },
-            didParseCell: d => { if (d.column.index > 0) d.cell.styles.halign = "right"; } });
-        }
-      }
+      categoryTable(exp, y);
     });
 
     const pages = doc.getNumberOfPages();
