@@ -1,0 +1,1911 @@
+<title>Client Expenses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F5FC;
+    --surface: #FFFFFF;
+    --surface-2: #EEEEF8;
+    --text: #14183C;
+    --muted: #5B5F82;
+    --border: #DCDCEC;
+    --primary: #2A1FA8;
+    --primary-text: #FFFFFF;
+    --accent: #FF7A2F;
+    --danger: #C62828;
+    --ok: #1B7F4B;
+    --ok-bg: #E3F4EA;
+    --warn-bg: #FFF3E0;
+    --warn-fg: #7A3E00;
+    --warn-border: #FFB74D;
+    --shadow: 0 1px 2px rgba(20, 24, 60, .06), 0 4px 16px rgba(20, 24, 60, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1124;
+      --surface: #181B33;
+      --surface-2: #22264A;
+      --text: #ECEDF8;
+      --muted: #A3A6C8;
+      --border: #2E3260;
+      --primary: #8C82FF;
+      --primary-text: #0F1124;
+      --accent: #FF9A5C;
+      --danger: #FF6B6B;
+      --ok: #4CD38A;
+      --ok-bg: #173A2A;
+      --warn-bg: #3A2410;
+      --warn-fg: #FFD3A8;
+      --warn-border: #8A5A2B;
+      --shadow: none;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1124;
+    --surface: #181B33;
+    --surface-2: #22264A;
+    --text: #ECEDF8;
+    --muted: #A3A6C8;
+    --border: #2E3260;
+    --primary: #8C82FF;
+    --primary-text: #0F1124;
+    --accent: #FF9A5C;
+    --danger: #FF6B6B;
+    --ok: #4CD38A;
+    --ok-bg: #173A2A;
+    --warn-bg: #3A2410;
+    --warn-fg: #FFD3A8;
+    --warn-border: #8A5A2B;
+    --shadow: none;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "DM Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2 { font-family: "Poppins", system-ui, sans-serif; margin: 0; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.05rem; margin-bottom: 12px; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  header.top {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .top-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .print-only { display: none; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat .label { color: var(--muted); font-size: .85rem; }
+  .stat .value { font-family: "Poppins", sans-serif; font-size: 1.35rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .stat .sub { color: var(--muted); font-size: .8rem; margin-top: 4px; }
+  .neg { color: var(--danger); }
+  .pos { color: var(--ok); }
+
+  .meter { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 6px; }
+  .meter > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+  .meter.is-over > span { background: var(--danger); }
+
+  .grid { display: grid; grid-template-columns: 380px 1fr; gap: 16px; align-items: start; }
+  .side, .main { display: grid; gap: 16px; min-width: 0; }
+
+  label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+  .field { margin-bottom: 12px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .inline { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  input, select, button { font: inherit; color: inherit; }
+  input, select {
+    width: 100%;
+    min-width: 0;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface);
+  }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .top-controls input, .top-controls select { width: auto; }
+
+  button {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 8px 12px;
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  button:hover { background: var(--surface-2); }
+  button.primary { background: var(--primary); color: var(--primary-text); border-color: var(--primary); font-weight: 700; }
+  button.primary:hover { filter: brightness(1.08); }
+  button.primary.green { background: var(--ok); border-color: var(--ok); color: var(--primary-text); }
+  button.danger { color: var(--danger); }
+  button.small { padding: 4px 8px; font-size: .8rem; }
+  button.link { border: 0; background: none; color: var(--primary); padding: 0; font-size: .85rem; }
+  .form-actions { display: flex; gap: 8px; }
+  .form-actions .primary { flex: 1; }
+
+  /* entry tabs */
+  .tabs { display: flex; gap: 4px; background: var(--surface-2); border-radius: 11px; padding: 4px; margin-bottom: 14px; }
+  .tabs button { flex: 1; border: 0; background: transparent; padding: 8px; font-weight: 500; color: var(--muted); }
+  .tabs button.active { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: var(--shadow); }
+
+  /* bill photo scanner */
+  .scan { border: 1px dashed var(--primary); border-radius: 12px; padding: 12px; margin-bottom: 14px; background: var(--surface-2); display: grid; gap: 10px; }
+  .scan-head strong { display: block; }
+  .scan-head span { color: var(--muted); font-size: .8rem; }
+  .scan-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .scan-btns button { font-weight: 600; font-size: .9rem; padding: 9px 8px; }
+  .scan-status { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: center; }
+  .scan-status img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+  #scanMsg { font-size: .85rem; }
+  .scan.busy #scanMsg { color: var(--primary); font-weight: 600; }
+  .offscreen { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden; }
+  .needs-pick { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .photo-btn { margin-top: 6px; padding: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; width: 56px; height: 56px; display: block; background: var(--surface-2); }
+  .photo-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  dialog.modal.photo { width: min(720px, calc(100% - 32px)); }
+  #photoImg { max-width: 100%; max-height: 70vh; display: block; margin: 0 auto 12px; border-radius: 8px; }
+
+  /* item lines in the expense form */
+  .lines-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .lines-head label { margin: 0; }
+  .lines { display: grid; gap: 8px; margin-bottom: 8px; }
+  .line { display: grid; grid-template-columns: 1fr 104px auto; gap: 6px; }
+  .line input { padding: 7px 9px; font-size: .92rem; }
+  .line .remove { padding: 4px 10px; color: var(--muted); }
+  .lines-count { color: var(--muted); font-size: .8rem; margin: -2px 0 12px; }
+  #amount { font-family: "Poppins", sans-serif; font-weight: 700; font-size: 1.05rem; }
+
+  /* client summary table */
+  .table-wrap { overflow-x: auto; }
+  .summary { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  .summary th { text-align: left; color: var(--muted); font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 0 8px 8px; border-bottom: 1px solid var(--border); }
+  .summary td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .summary .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .summary tbody tr { cursor: pointer; }
+  .summary tbody tr:hover { background: var(--surface-2); }
+  .summary tbody tr.active { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--primary); }
+  .summary tfoot td { font-weight: 700; border-bottom: 0; }
+  .client-name { font-weight: 600; overflow-wrap: anywhere; }
+  .client-sub { color: var(--muted); font-size: .76rem; margin-top: 2px; }
+
+  .cat-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; margin-bottom: 10px; font-size: .9rem; }
+  .cat-row .bar { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .cat-row .bar span { display: block; height: 100%; border-radius: 999px; }
+  .cat-row .amt { font-variant-numeric: tabular-nums; }
+  .cat-row .pct { color: var(--muted); font-size: .8rem; margin-left: 6px; }
+
+  /* clients manager */
+  .client-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .client-item:last-child { border-bottom: 0; }
+  .client-item .totals { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .client-item .btns { display: flex; gap: 4px; margin-top: 6px; }
+  .badge { font-size: .7rem; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--muted); margin-left: 6px; font-weight: 500; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); font-size: .85rem; }
+  .chip button { border: 0; background: none; padding: 2px 6px; border-radius: 999px; color: var(--muted); font-size: .75rem; }
+  .chip button:hover { background: var(--surface-2); color: var(--danger); }
+
+  .list-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .list-head h2 { margin: 0; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filters input, .filters select { width: auto; max-width: 100%; }
+
+  .group { margin-top: 14px; }
+  .group-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; color: var(--muted); font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 0 4px 6px; border-bottom: 1px solid var(--border); }
+  .item { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 10px; align-items: start; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+  .item:last-child { border-bottom: 0; }
+  .dot { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 1.1rem; }
+  .item .title { font-weight: 500; overflow-wrap: anywhere; }
+  .item .meta { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
+  .item .amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 2px; }
+  .item .amount.in { color: var(--ok); }
+  .item .actions { display: flex; gap: 4px; }
+  .item.payment .dot { background: var(--ok-bg); }
+  .lview { margin-top: 6px; border-left: 2px solid var(--border); padding-left: 8px; display: grid; gap: 2px; }
+  .lview div { display: flex; justify-content: space-between; gap: 10px; font-size: .84rem; }
+  .lview span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); }
+
+  .empty { text-align: center; color: var(--muted); padding: 28px 8px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .note { color: var(--muted); font-size: .8rem; margin-top: 10px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(150%);
+    background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px;
+    transition: transform .25s; z-index: 10; display: flex; width: max-content; max-width: calc(100% - 32px); gap: 12px; align-items: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast button { background: transparent; color: var(--bg); border-color: currentColor; }
+
+  .banner { background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-border); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: .9rem; }
+
+  dialog.modal {
+    border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+    background: var(--surface); color: var(--text); width: min(420px, calc(100% - 32px));
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+  }
+  dialog.modal::backdrop { background: rgba(10, 12, 30, .45); }
+  dialog.modal h2 { margin-bottom: 8px; }
+  dialog.modal p { margin: 0 0 14px; color: var(--muted); white-space: pre-line; }
+  dialog.modal .form-actions { justify-content: flex-end; margin-top: 4px; }
+  dialog.modal .form-actions .primary { flex: 0 0 auto; }
+  button.primary.danger-fill { background: var(--danger); border-color: var(--danger); color: var(--primary-text); }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .side, .main { display: contents; }
+    #entryCard { order: 1; }
+    #summaryCard { order: 2; }
+    #listCard { order: 3; }
+    #clientsCard { order: 4; }
+    #itemsCard { order: 5; }
+    #catCard { order: 6; }
+    #dataCard { order: 7; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .item { grid-template-columns: 32px 1fr auto; }
+    .item .actions { grid-column: 2 / -1; justify-content: flex-end; }
+    .dot { width: 32px; height: 32px; }
+    .summary { font-size: .84rem; }
+    .summary th, .summary td { padding-left: 4px; padding-right: 4px; }
+    .summary .client-sub { display: none; }
+    .stat .value { font-size: 1.15rem; }
+  }
+
+  @media print {
+    :root, :root[data-theme="dark"] {
+      --bg: #fff; --surface: #fff; --surface-2: #eee; --text: #000; --muted: #444; --border: #ccc; --primary: #2A1FA8; --shadow: none;
+    }
+    .wrap { max-width: none; padding: 0; }
+    .no-print, #entryCard, #clientsCard, #itemsCard, #dataCard, .top-controls, .item .actions, .filters, .toast { display: none !important; }
+    .print-only { display: block; }
+    .grid { grid-template-columns: 1fr; }
+    .side, .main { display: contents; }
+    #summaryCard { order: 1; } #listCard { order: 2; } #catCard { order: 3; }
+    .card { border: 0; padding: 0; break-inside: auto; }
+    .summary tbody tr.active { box-shadow: none; }
+    .stats { grid-template-columns: repeat(4, 1fr); }
+    .stat { border: 1px solid var(--border) !important; padding: 10px !important; }
+    .item { break-inside: avoid; }
+  }
+</style>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Client Expenses</h1>
+      <div class="print-only" id="printHeading"></div>
+    </div>
+    <div class="top-controls">
+      <input type="month" id="month" aria-label="Month">
+      <button id="prevMonth" aria-label="Previous month">‹</button>
+      <button id="nextMonth" aria-label="Next month">›</button>
+      <button id="themeBtn" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <div class="banner no-print" id="storageBanner" hidden><span id="bannerMsg"></span></div>
+
+  <section class="stats">
+    <div class="card stat">
+      <div class="label">Received this month</div>
+      <div class="value pos" id="statIn">–</div>
+      <div class="sub" id="statInSub"></div>
+    </div>
+    <div class="card stat">
+      <div class="label">Spent this month</div>
+      <div class="value" id="statOut">–</div>
+      <div class="sub" id="statOutSub"></div>
+    </div>
+    <div class="card stat">
+      <div class="label">Balance this month</div>
+      <div class="value" id="statBal">–</div>
+      <div class="sub">received − spent</div>
+    </div>
+    <div class="card stat">
+      <div class="label">Biggest category</div>
+      <div class="value" id="statCat">–</div>
+      <div class="sub" id="statCatSub"></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div class="side">
+      <div class="card" id="entryCard">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tabExpense" class="active" aria-selected="true">Expense</button>
+          <button type="button" role="tab" id="tabPayment" aria-selected="false">Payment received</button>
+        </div>
+
+        <!-- expense (one bill, many items) -->
+        <form id="form" autocomplete="off">
+          <h2 id="formTitle">Record expense</h2>
+          <div class="scan" id="scanBox">
+            <div class="scan-head">
+              <strong>Fill in from a bill photo</strong>
+              <span id="scanHint">Claude reads the vendor, date, items and total. You choose the client.</span>
+            </div>
+            <div class="scan-btns" id="scanBtns">
+              <button type="button" id="scanCameraBtn">📷 Take photo</button>
+              <button type="button" id="scanGalleryBtn">🖼️ From gallery</button>
+            </div>
+            <input type="file" id="scanCamera" accept="image/*" capture="environment" class="offscreen" tabindex="-1" aria-hidden="true">
+            <input type="file" id="scanGallery" accept="image/*" class="offscreen" tabindex="-1" aria-hidden="true">
+            <div class="scan-status" id="scanStatus" hidden>
+              <img id="scanThumb" alt="Bill photo">
+              <div>
+                <div id="scanMsg"></div>
+                <button type="button" class="link" id="scanCancel">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="client">Client / project</label>
+            <div class="inline">
+              <select id="client"></select>
+              <button type="button" class="quick-client" data-target="client" title="Add a new client">+ New</button>
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="date">Date</label>
+              <input id="date" type="date" required>
+            </div>
+            <div class="field">
+              <label for="bill">Bill / invoice no.</label>
+              <input id="bill" type="text" maxlength="40" placeholder="Optional">
+            </div>
+          </div>
+          <div class="field">
+            <label for="vendor">Vendor / paid to</label>
+            <input id="vendor" type="text" maxlength="80" placeholder="e.g. vendor, shop or contractor name">
+          </div>
+
+          <div class="lines-head">
+            <label>Items</label>
+            <button type="button" class="link" id="addLine">+ Add item</button>
+          </div>
+          <div class="lines" id="lines"></div>
+          <datalist id="itemList"></datalist>
+          <div class="lines-count" id="linesCount"></div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="amount">Total amount</label>
+              <input id="amount" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="₹ bill total">
+            </div>
+            <div class="field">
+              <label for="category">Category</label>
+              <select id="category"></select>
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="method">Paid with</label>
+              <select id="method">
+                <option>UPI</option>
+                <option>Cash</option>
+                <option>Bank transfer</option>
+                <option>Cheque</option>
+                <option>Company card</option>
+                <option>Paid by client</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="note">Note / work area</label>
+              <input id="note" type="text" maxlength="160" placeholder="e.g. Kitchen">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary" id="submitBtn">Add expense</button>
+            <button type="button" id="cancelEdit" hidden>Cancel</button>
+          </div>
+        </form>
+
+        <!-- payment received from client -->
+        <form id="payForm" autocomplete="off" hidden>
+          <h2 id="payTitle">Payment received</h2>
+          <div class="field">
+            <label for="payClient">From client</label>
+            <div class="inline">
+              <select id="payClient"></select>
+              <button type="button" class="quick-client" data-target="payClient" title="Add a new client">+ New</button>
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="payAmount">Amount received</label>
+              <input id="payAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="0">
+            </div>
+            <div class="field">
+              <label for="payDate">Date</label>
+              <input id="payDate" type="date" required>
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="payMethod">Received via</label>
+              <select id="payMethod">
+                <option>Bank transfer</option>
+                <option>UPI</option>
+                <option>Cash</option>
+                <option>Cheque</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="payRef">Reference no.</label>
+              <input id="payRef" type="text" maxlength="40" placeholder="Optional">
+            </div>
+          </div>
+          <div class="field">
+            <label for="payNote">Note</label>
+            <input id="payNote" type="text" maxlength="160" list="payNotes" placeholder="e.g. Advance, 2nd instalment">
+            <datalist id="payNotes">
+              <option value="Advance"></option>
+              <option value="Booking amount"></option>
+              <option value="1st instalment"></option>
+              <option value="2nd instalment"></option>
+              <option value="3rd instalment"></option>
+              <option value="Final payment"></option>
+              <option value="Material advance"></option>
+              <option value="Design fee"></option>
+            </datalist>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary green" id="paySubmit">Add payment</button>
+            <button type="button" id="payCancel" hidden>Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" id="clientsCard">
+        <h2>Clients</h2>
+        <form id="clientForm" autocomplete="off">
+          <div class="field">
+            <label for="clientName" id="clientFormLabel">Add a client</label>
+            <input id="clientName" type="text" maxlength="60" required placeholder="e.g. Mehta Residence, Kochi">
+          </div>
+          <div class="field">
+            <label for="clientBudget">Project budget (optional)</label>
+            <input id="clientBudget" type="number" min="0" step="1" inputmode="numeric" placeholder="Total for the whole project">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary" id="clientSubmit">Add client</button>
+            <button type="button" id="clientCancel" hidden>Cancel</button>
+          </div>
+        </form>
+        <div id="clientList" style="margin-top:12px"></div>
+        <button type="button" class="link" id="toggleArchived" hidden></button>
+      </div>
+
+      <div class="card" id="itemsCard">
+        <h2>My items</h2>
+        <form id="itemForm" autocomplete="off">
+          <div class="field">
+            <label for="newItemName">Add a material or item</label>
+            <input id="newItemName" type="text" maxlength="60" required placeholder="e.g. 18mm Century BWP ply">
+          </div>
+          <div class="field">
+            <label for="newItemCat">Category</label>
+            <div class="inline">
+              <select id="newItemCat"></select>
+              <button type="submit" class="primary">Add</button>
+            </div>
+          </div>
+        </form>
+        <p class="note" id="itemsInfo" style="margin-top:0"></p>
+        <input id="itemFilter" type="search" placeholder="Search your items" aria-label="Search your items" style="margin-bottom:10px">
+        <div class="chips" id="myItems"></div>
+      </div>
+
+      <div class="card" id="dataCard">
+        <h2>Data</h2>
+        <div class="tools">
+          <button id="exportBtn" type="button">Export all (CSV)</button>
+          <button id="exportMonthBtn" type="button">Month summary (CSV)</button>
+          <button id="importBtn" type="button">Import CSV</button>
+          <button id="clearBtn" type="button" class="danger">Delete all</button>
+          <input id="importFile" type="file" accept=".csv,text/csv" hidden>
+        </div>
+        <p class="note">Records are saved online, so they're the same on your phone and laptop. Export a CSV now and then for your own copy.</p>
+      </div>
+    </div>
+
+    <div class="main">
+      <section class="card" id="summaryCard">
+        <h2 id="summaryTitle">Clients this month</h2>
+        <div id="summary"></div>
+      </section>
+
+      <section class="card" id="listCard">
+        <div class="list-head">
+          <h2 id="listTitle">Records</h2>
+          <div class="filters">
+            <select id="filterType" aria-label="Filter by type">
+              <option value="">Expenses &amp; payments</option>
+              <option value="expense">Expenses only</option>
+              <option value="payment">Payments only</option>
+            </select>
+            <select id="filterClient" aria-label="Filter by client"></select>
+            <select id="filterCat" aria-label="Filter by category"></select>
+            <select id="groupBy" aria-label="Group by">
+              <option value="client">Group by client</option>
+              <option value="day">Group by date</option>
+            </select>
+            <input id="search" type="search" placeholder="Search" aria-label="Search">
+          </div>
+        </div>
+        <div id="list"></div>
+      </section>
+
+      <div class="card" id="catCard">
+        <h2>Spend by category · <span id="catMonth"></span></h2>
+        <div id="breakdown"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<dialog class="modal" id="modal">
+  <form method="dialog" id="modalForm">
+    <h2 id="modalTitle"></h2>
+    <p id="modalMsg"></p>
+    <div class="field" id="modalField" hidden>
+      <label for="modalInput" id="modalLabel"></label>
+      <input id="modalInput" type="text" maxlength="60" autocomplete="off">
+    </div>
+    <div class="form-actions">
+      <button type="button" id="modalCancel">Cancel</button>
+      <button type="submit" class="primary" id="modalOk">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="modal photo" id="photoModal">
+  <form method="dialog">
+    <img id="photoImg" alt="Bill photo">
+    <div class="form-actions"><button type="submit" class="primary">Close</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastUndo" class="small" hidden>Undo</button></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const CATEGORIES = [
+    { name: "Materials", icon: "🪵", color: "#B07A3F", items: ["Plywood", "MDF board", "HDHMR board", "Particle board", "Block board", "Laminate", "Veneer", "Acrylic sheet", "Glass", "Mirror", "Tiles", "Marble", "Granite", "Quartz countertop", "Wooden flooring", "Vinyl flooring", "Gypsum board", "False ceiling material", "Wallpaper", "Wall panels", "Adhesive", "Edge banding", "Cement & sand",
+      "Marine plywood", "Flexi plywood", "WPC board", "PVC board", "Acrylic laminate", "Kitchen laminate", "Louvers", "Fluted panel", "Charcoal panel",
+      "PVC panel", "Stone cladding", "Wall cladding", "Solid surface (Corian)", "Toughened glass", "Lacquered glass", "Frosted film", "Glass partition",
+      "Aluminium profile", "Aluminium sections", "MS steel", "SS sheet", "Teak wood", "Sal wood", "Rubber wood", "Wooden beading", "Skirting",
+      "Carpet tiles", "Artificial grass", "Tile adhesive", "Grout", "Waterproofing", "POP", "Gypsum powder", "Silicone sealant", "Bricks", "Cement", "Sand"] },
+    { name: "Furniture", icon: "🛋️", color: "#7A4FD8", items: ["Sofa", "Bed", "Mattress", "Dining table", "Chairs", "Wardrobe", "Modular kitchen", "TV unit", "Study table", "Shoe rack", "Side table", "Coffee table", "Office workstation", "Custom furniture"] },
+    { name: "Lighting & Electrical", icon: "💡", color: "#D8A12A", items: ["Ceiling lights", "Pendant lights", "Chandelier", "Wall lights", "LED strip", "Profile lights", "Spot lights", "Switches & sockets", "Wiring & cables", "Ceiling fan", "DB & MCB"] },
+    { name: "Fabric & Upholstery", icon: "🧵", color: "#D8457A", items: ["Curtains", "Blinds", "Curtain rods & tracks", "Upholstery fabric", "Cushions", "Rugs & carpets", "Foam", "Headboard upholstery"] },
+    { name: "Paint & Finishes", icon: "🎨", color: "#2FA36B", items: ["Interior paint", "Exterior paint", "Primer", "Wall putty", "Texture paint", "PU polish", "Duco paint", "Melamine polish", "Wood stain"] },
+    { name: "Hardware & Fittings", icon: "🔩", color: "#5B6B8A", items: ["Hinges", "Drawer channels", "Handles & knobs", "Locks", "Kitchen accessories", "Wardrobe accessories", "Tandem boxes", "Lift-up fittings", "Screws & nails", "Door stoppers", "Glass fittings"] },
+    { name: "Decor & Accessories", icon: "🖼️", color: "#FF7A2F", items: ["Artwork", "Wall decor", "Decorative mirror", "Plants & planters", "Vases & showpieces", "Clocks", "Table decor", "Photo frames"] },
+    { name: "Plumbing & Sanitary", icon: "🚿", color: "#2A7FD8", items: ["Taps & mixers", "Wash basin", "Kitchen sink", "WC", "Shower", "Bathroom accessories", "Pipes & fittings", "Water heater"] },
+    { name: "Appliances", icon: "🔌", color: "#3FA8D8", items: ["Chimney", "Hob", "Built-in oven", "Microwave", "Refrigerator", "Dishwasher", "Air conditioner", "Water purifier"] },
+    { name: "Labour & Contractors", icon: "👷", color: "#C2562A", items: ["Carpenter", "Electrician", "Plumber", "Painter", "Mason", "Tile layer", "Polisher", "False ceiling work", "Helper", "Installation charges", "Civil work"] },
+    { name: "Transport & Delivery", icon: "🚚", color: "#1FA8A0", items: ["Material transport", "Loading & unloading", "Courier", "Delivery charges"] },
+    { name: "Site Visit & Travel", icon: "🚗", color: "#4F6BD8", items: ["Fuel", "Cab / auto", "Parking & toll", "Site visit"] },
+    { name: "Design & Printing", icon: "📐", color: "#A84FD8", items: ["Drawing prints", "3D renders", "Material samples", "Site measurement", "Permits & approvals"] },
+    { name: "Other", icon: "📦", color: "#8A8FA8", items: ["Site cleaning", "Debris removal", "Miscellaneous"] }
+  ];
+  const catByName = Object.fromEntries(CATEGORIES.map(c => [c.name, c]));
+  const catInfo = name => catByName[name] || catByName.Other;
+  const builtInCategory = {};
+  for (const c of CATEGORIES) for (const it of c.items) builtInCategory[it.toLowerCase()] = c.name;
+  let itemCategory = { ...builtInCategory };   // rebuilt with the user's own items in rebuildItemList()
+
+  // ---------- state ----------
+  // Records live in the artifact's shared database; the theme is a per-device preference.
+  const THEME_KEY = "client-expenses.theme";
+  let state = { clients: [], expenses: [], payments: [], customItems: [], theme: readTheme() };
+  let editingId = null;       // expense being edited
+  let editingPayId = null;    // payment being edited
+  let editingClientId = null;
+  let showArchived = false;
+  let loading = true;
+
+  function readTheme() {
+    try { return localStorage.getItem(THEME_KEY) || ""; } catch (e) { return ""; }
+  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function isDate(d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); }
+
+  // Older records kept the item on the expense itself, or an amount on every item line;
+  // now a bill is: a list of items (name + qty) with one total amount and one category.
+  function normalizeExpense(e) {
+    if (!e || typeof e.id !== "string" || !isDate(e.date)) return null;
+    const rawLines = Array.isArray(e.lines) ? e.lines : (e.item || e.qty ? [{ item: e.item, qty: e.qty, category: e.category }] : []);
+    let amount = round2(Number(e.amount));
+    if (!(amount > 0)) amount = round2(rawLines.reduce((s, l) => s + (Number(l.amount) || 0), 0));
+    if (!(amount > 0)) return null;
+    let category = e.category;
+    if (!category && rawLines.length) {
+      const biggest = [...rawLines].sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))[0];
+      category = biggest.category || itemCategory[String(biggest.item || "").toLowerCase()];
+    }
+    return {
+      id: e.id, createdAt: e.createdAt || 0, clientId: e.clientId, date: e.date,
+      vendor: e.vendor || "", method: e.method || "Other", bill: e.bill || "", note: e.note || "",
+      lines: rawLines.map(l => ({ item: String(l.item || "").trim(), qty: String(l.qty || "").trim() })).filter(l => l.item || l.qty),
+      category: catInfo(category).name,
+      photo: typeof e.photo === "string" ? e.photo : "",
+      amount
+    };
+  }
+  function normalizePayment(p) {
+    if (!p || typeof p.id !== "string" || !isDate(p.date) || !(Number(p.amount) > 0)) return null;
+    return { id: p.id, createdAt: p.createdAt || 0, clientId: p.clientId, date: p.date, amount: round2(Number(p.amount)), method: p.method || "Other", ref: p.ref || "", note: p.note || "" };
+  }
+
+  function normalizeClient(c) {
+    if (!c || typeof c.id !== "string" || !c.name) return null;
+    return { id: c.id, name: String(c.name), budget: Math.max(0, Number(c.budget) || 0), archived: !!c.archived, createdAt: c.createdAt || 0 };
+  }
+  function normalizeItem(i) {
+    if (!i || typeof i.id !== "string" || typeof i.name !== "string" || !i.name.trim()) return null;
+    return { id: i.id, name: i.name.trim(), category: catInfo(i.category).name };
+  }
+
+  // ---------- shared database ----------
+  const COLLECTIONS = { clients: "clients", expenses: "expenses", payments: "payments", customItems: "items" };
+  const NORMALIZE = { clients: normalizeClient, expenses: normalizeExpense, payments: normalizePayment, customItems: normalizeItem };
+  const synced = { clients: new Map(), expenses: new Map(), payments: new Map(), customItems: new Map() };
+  const writeChains = new Map();
+  let db = null;
+  let readOnly = false;
+
+  function showBanner(msg) {
+    $("bannerMsg").textContent = msg;
+    $("storageBanner").hidden = !msg;
+  }
+
+  // Compare the in-memory records with what the database last showed us and write only what changed.
+  function save() {
+    if (!db) {
+      if (!loading) showBanner("Not connected to the saved records. Open this page on claude.ai while signed in — changes made here won't be kept.");
+      return;
+    }
+    if (readOnly) return;
+    for (const [key, coll] of Object.entries(COLLECTIONS)) {
+      const was = synced[key];
+      const now = new Map(state[key].map(d => [d.id, d]));
+      for (const [id, d] of now) {
+        const json = JSON.stringify(d);
+        if (was.get(id) !== json) { was.set(id, json); queueWrite(coll, id, JSON.parse(json)); }
+      }
+      for (const id of [...was.keys()]) if (!now.has(id)) { was.delete(id); queueWrite(coll, id, null); }
+    }
+  }
+  function queueWrite(coll, id, body, retried) {
+    const key = coll + "/" + id;
+    const run = () => {
+      const ref = db.collection(coll).doc(id);
+      return body ? ref.set(body) : ref.delete();
+    };
+    const next = (writeChains.get(key) || Promise.resolve())
+      .then(run)
+      .catch(err => {
+        const code = err && err.code;
+        if (code === "unavailable" && !retried) {
+          return new Promise(r => setTimeout(r, 800 + Math.random() * 800)).then(() => queueWrite(coll, id, body, true));
+        }
+        if (code === "invalid_argument") {
+          readOnly = true;
+          showBanner("You can view these records but can't change them. Ask the owner to give you edit access.");
+        } else if (code === "quota_exceeded") {
+          toast("Storage is full. Delete some old records, then try again.");
+        } else if (code === "revoked") {
+          showBanner("Access to these records was turned off. Reload the page to continue.");
+        } else {
+          toast("A change couldn't be saved. Check your internet connection and try again.");
+        }
+      });
+    writeChains.set(key, next);
+    return next;
+  }
+
+  let renderQueued = false;
+  function scheduleRender() {
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(() => {
+      renderQueued = false;
+      rebuildItemList();
+      renderMyItems();
+      render();
+    });
+  }
+
+  async function connect() {
+    const host = window.claude;
+    db = host && typeof host.use === "function" ? await host.use("db").catch(() => null) : null;
+    if (!db) {
+      loading = false;
+      save();
+      render();
+      return;
+    }
+    const user = await host.use("user").catch(() => null);
+    if (user && typeof user.can === "function") {
+      const canWrite = await Promise.resolve(user.can("data.write")).catch(() => null);
+      if (canWrite === false) {
+        readOnly = true;
+        showBanner("You can view these records but can't change them. Ask the owner to give you edit access.");
+      }
+    }
+    let waiting = Object.keys(COLLECTIONS).length;
+    for (const [key, coll] of Object.entries(COLLECTIONS)) {
+      let first = true;
+      db.collection(coll).onSnapshot(snap => {
+        state[key] = snap.docs.map(d => NORMALIZE[key]({ ...d.data(), id: d.id })).filter(Boolean);
+        synced[key] = new Map(state[key].map(d => [d.id, JSON.stringify(d)]));
+        if (first) { first = false; if (--waiting === 0) loading = false; }
+        scheduleRender();
+      }, err => {
+        showBanner(err && err.code === "revoked"
+          ? "Access to these records was turned off. Reload the page to continue."
+          : "Lost the connection to the saved records. Reload the page to reconnect.");
+      });
+    }
+  }
+
+  const clientById = id => state.clients.find(c => c.id === id);
+  const clientName = id => (clientById(id) || { name: "Unknown client" }).name;
+  const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+
+  // ---------- helpers ----------
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, "0");
+  const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const monthOf = iso => iso.slice(0, 7);
+  const currentMonth = () => $("month").value || monthOf(todayISO());
+  function shiftMonth(ym, delta) {
+    const [y, m] = ym.split("-").map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+  }
+  const fmtWhole = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmtPaise = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function money(n) {
+    const r = round2(n);
+    return (Number.isInteger(r) ? fmtWhole : fmtPaise).format(r);
+  }
+  function monthLabel(ym) {
+    const [y, m] = ym.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+  function dayLabel(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  }
+  const sum = arr => round2(arr.reduce((s, e) => s + e.amount, 0));
+  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const lineLabel = l => [l.item, l.qty && (l.item ? `(${l.qty})` : l.qty)].filter(Boolean).join(" ");
+  function el(tag, attrs, ...children) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === "class") node.className = v;
+      else if (k === "style") node.style.cssText = v;
+      else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
+      else node.setAttribute(k, v);
+    }
+    for (const c of children) if (c != null) node.append(c);
+    return node;
+  }
+
+  let toastTimer;
+  function toast(msg, onUndo) {
+    $("toastMsg").textContent = msg;
+    const undoBtn = $("toastUndo");
+    undoBtn.hidden = !onUndo;
+    undoBtn.onclick = () => { onUndo(); $("toast").classList.remove("show"); };
+    $("toast").classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("toast").classList.remove("show"), onUndo ? 6000 : 2500);
+  }
+
+  // In-page replacement for confirm()/prompt(), which many browsers block in previews and embedded views.
+  function ask({ title, message = "", input = null, okText = "OK", danger = false }) {
+    const modal = $("modal");
+    $("modalTitle").textContent = title;
+    $("modalMsg").textContent = message;
+    $("modalMsg").hidden = !message;
+    $("modalField").hidden = !input;
+    $("modalInput").required = !!input;
+    if (input) {
+      $("modalLabel").textContent = input.label || "";
+      $("modalInput").value = input.value || "";
+      $("modalInput").placeholder = input.placeholder || "";
+    }
+    $("modalOk").textContent = okText;
+    $("modalOk").className = "primary" + (danger ? " danger-fill" : "");
+    return new Promise(resolve => {
+      const finish = result => {
+        $("modalForm").onsubmit = null;
+        $("modalCancel").onclick = null;
+        modal.onclose = null;
+        if (modal.open) modal.close();
+        resolve(result);
+      };
+      $("modalForm").onsubmit = ev => {
+        ev.preventDefault();
+        if (input && !$("modalInput").value.trim()) return;
+        finish(input ? $("modalInput").value.trim() : true);
+      };
+      $("modalCancel").onclick = () => finish(input ? null : false);
+      modal.onclose = () => finish(input ? null : false);
+      modal.showModal();
+      (input ? $("modalInput") : $("modalOk")).focus();
+    });
+  }
+
+  // ---------- item lines (expense form) ----------
+  let categoryTouched = false;   // once the user picks a category, stop auto-filling it
+
+  function addLine(data = {}) {
+    const item = el("input", { type: "text", list: "itemList", maxlength: "60", placeholder: "Item, e.g. Plywood", "aria-label": "Item", class: "l-item" });
+    const qty = el("input", { type: "text", maxlength: "30", placeholder: "Qty", "aria-label": "Quantity", class: "l-qty" });
+    const remove = el("button", { type: "button", class: "remove", title: "Remove item", "aria-label": "Remove item" }, "✕");
+    const row = el("div", { class: "line" }, item, qty, remove);
+    item.value = data.item || "";
+    qty.value = data.qty || "";
+    item.addEventListener("input", () => { autoCategory(); updateItemCount(); });
+    remove.addEventListener("click", () => {
+      if ($("lines").children.length > 1) row.remove();
+      else { item.value = ""; qty.value = ""; }
+      autoCategory();
+      updateItemCount();
+    });
+    $("lines").append(row);
+    updateItemCount();
+    return row;
+  }
+  function resetLines(lines) {
+    $("lines").replaceChildren();
+    for (const l of (lines && lines.length ? lines : [{}])) addLine(l);
+  }
+  function readLines() {
+    const lines = [];
+    for (const row of $("lines").children) {
+      const item = row.querySelector(".l-item").value.trim();
+      const qty = row.querySelector(".l-qty").value.trim();
+      if (item || qty) lines.push({ item, qty });
+    }
+    return lines;
+  }
+  // Category follows the first item we recognise, until the user chooses one themselves.
+  function autoCategory() {
+    if (categoryTouched) return;
+    for (const l of readLines()) {
+      const c = itemCategory[l.item.toLowerCase()];
+      if (c) { $("category").value = c; return; }
+    }
+  }
+  function updateItemCount() {
+    const n = readLines().filter(l => l.item).length;
+    $("linesCount").textContent = n ? plural(n, "item") + " on this bill" : "";
+  }
+
+  // ---------- setup ----------
+  rebuildItemList();
+  for (const c of CATEGORIES) $("newItemCat").append(el("option", { value: c.name }, `${c.icon} ${c.name}`));
+  for (const c of CATEGORIES) $("category").append(el("option", { value: c.name }, `${c.icon} ${c.name}`));
+  $("category").addEventListener("change", () => { categoryTouched = true; });
+  $("filterCat").append(el("option", { value: "" }, "All categories"));
+  for (const c of CATEGORIES) $("filterCat").append(el("option", { value: c.name }, c.name));
+
+  $("month").value = monthOf(todayISO());
+  $("date").value = todayISO();
+  $("payDate").value = todayISO();
+  resetLines();
+  applyTheme();
+
+  function setTab(tab) {
+    const pay = tab === "payment";
+    $("form").hidden = pay;
+    $("payForm").hidden = !pay;
+    $("tabExpense").classList.toggle("active", !pay);
+    $("tabPayment").classList.toggle("active", pay);
+    $("tabExpense").setAttribute("aria-selected", String(!pay));
+    $("tabPayment").setAttribute("aria-selected", String(pay));
+  }
+  $("tabExpense").addEventListener("click", () => setTab("expense"));
+  $("tabPayment").addEventListener("click", () => setTab("payment"));
+
+  // ---------- render ----------
+  function fillClientSelect(sel, archivedIdToKeep) {
+    const keep = sel.value;
+    sel.replaceChildren();
+    const active = state.clients.filter(c => !c.archived).sort(byName);
+    sel.append(el("option", { value: "" }, active.length ? "Choose client…" : "Add a client first"));
+    for (const c of active) sel.append(el("option", { value: c.id }, c.name));
+    // keep an archived client selectable while editing one of its records
+    if (archivedIdToKeep && clientById(archivedIdToKeep)?.archived) {
+      sel.append(el("option", { value: archivedIdToKeep }, `${clientName(archivedIdToKeep)} (archived)`));
+    }
+    sel.value = [...sel.options].some(o => o.value === keep) ? keep : "";
+  }
+  function renderClientSelects() {
+    const editingExp = editingId && state.expenses.find(x => x.id === editingId);
+    const editingPay = editingPayId && state.payments.find(x => x.id === editingPayId);
+    fillClientSelect($("client"), editingExp && editingExp.clientId);
+    fillClientSelect($("payClient"), editingPay && editingPay.clientId);
+
+    const fSel = $("filterClient");
+    const keepF = fSel.value;
+    fSel.replaceChildren(el("option", { value: "" }, "All clients"));
+    for (const c of [...state.clients].sort(byName)) fSel.append(el("option", { value: c.id }, c.name + (c.archived ? " (archived)" : "")));
+    fSel.value = [...fSel.options].some(o => o.value === keepF) ? keepF : "";
+  }
+
+  function projectTotals() {
+    const m = new Map();
+    const get = id => { if (!m.has(id)) m.set(id, { spent: 0, received: 0 }); return m.get(id); };
+    for (const e of state.expenses) get(e.clientId).spent += e.amount;
+    for (const p of state.payments) get(p.clientId).received += p.amount;
+    return { get: id => m.get(id) || { spent: 0, received: 0 } };
+  }
+  const balanceClass = n => (n < 0 ? "neg" : n > 0 ? "pos" : "");
+
+  function render() {
+    renderClientSelects();
+    const ym = currentMonth();
+    const monthExp = state.expenses.filter(e => monthOf(e.date) === ym);
+    const monthPay = state.payments.filter(p => monthOf(p.date) === ym);
+    const spent = sum(monthExp);
+    const received = sum(monthPay);
+    $("printHeading").textContent = `Client expense & payment report · ${monthLabel(ym)}`;
+
+    // stats
+    $("statIn").textContent = money(received);
+    $("statInSub").textContent = plural(monthPay.length, "payment");
+    $("statOut").textContent = money(spent);
+    const prevSpent = sum(state.expenses.filter(e => monthOf(e.date) === shiftMonth(ym, -1)));
+    $("statOutSub").textContent = prevSpent > 0
+      ? `${spent >= prevSpent ? "▲" : "▼"} ${Math.abs(((spent - prevSpent) / prevSpent) * 100).toFixed(0)}% vs last month`
+      : plural(monthExp.length, "bill");
+    const bal = round2(received - spent);
+    $("statBal").textContent = money(bal);
+    $("statBal").className = "value " + balanceClass(bal);
+
+    const byCat = {};
+    for (const e of monthExp) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
+    const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    if (cats.length) {
+      $("statCat").textContent = `${catInfo(cats[0][0]).icon} ${cats[0][0]}`;
+      $("statCatSub").textContent = `${money(cats[0][1])} · ${((cats[0][1] / spent) * 100).toFixed(0)}% of spend`;
+    } else {
+      $("statCat").textContent = "–";
+      $("statCatSub").textContent = "";
+    }
+
+    renderSummary(ym, monthExp, monthPay, spent, received);
+    renderCategories(ym, cats, spent);
+    renderClients();
+    renderList(ym, monthExp, monthPay);
+  }
+
+  function renderSummary(ym, monthExp, monthPay, spent, received) {
+    $("summaryTitle").textContent = `Clients · ${monthLabel(ym)}`;
+    const box = $("summary");
+    box.replaceChildren();
+    const rows = new Map();
+    const get = id => { if (!rows.has(id)) rows.set(id, { spent: 0, received: 0, bills: 0, pays: 0 }); return rows.get(id); };
+    for (const e of monthExp) { const r = get(e.clientId); r.spent += e.amount; r.bills++; }
+    for (const p of monthPay) { const r = get(p.clientId); r.received += p.amount; r.pays++; }
+    if (!rows.size) {
+      box.append(el("div", { class: "empty" }, loading ? "Loading records…" : state.clients.length ? "No expenses or payments recorded for this month." : "Start by adding a client in the Clients section."));
+      return;
+    }
+    const totals = projectTotals();
+    const selected = $("filterClient").value;
+    const tbody = el("tbody");
+    const sorted = [...rows.entries()].sort((a, b) => (b[1].spent + b[1].received) - (a[1].spent + a[1].received));
+    for (const [id, r] of sorted) {
+      const c = clientById(id);
+      const t = totals.get(id);
+      const projBal = round2(t.received - t.spent);
+      let sub = `Project: received ${money(t.received)} · spent ${money(t.spent)} · balance ${money(projBal)}`;
+      if (c && c.budget > 0) sub += ` · budget ${money(c.budget)}`;
+      const monthBal = round2(r.received - r.spent);
+      const tr = el("tr", { class: id === selected ? "active" : "", title: "Show this client's records" },
+        el("td", null, el("div", { class: "client-name" }, clientName(id)), el("div", { class: "client-sub" }, sub)),
+        el("td", { class: "num pos" }, r.received ? money(r.received) : "–"),
+        el("td", { class: "num" }, r.spent ? money(r.spent) : "–"),
+        el("td", { class: "num " + balanceClass(monthBal) }, money(monthBal))
+      );
+      tr.addEventListener("click", () => {
+        $("filterClient").value = id === selected ? "" : id;
+        render();
+        if (id !== selected) $("listCard").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      tbody.append(tr);
+    }
+    const bal = round2(received - spent);
+    box.append(el("div", { class: "table-wrap" }, el("table", { class: "summary" },
+      el("thead", null, el("tr", null,
+        el("th", null, "Client"), el("th", { class: "num" }, "Received"), el("th", { class: "num" }, "Spent"), el("th", { class: "num" }, "Balance"))),
+      tbody,
+      el("tfoot", null, el("tr", null,
+        el("td", null, "Total"),
+        el("td", { class: "num pos" }, money(received)),
+        el("td", { class: "num" }, money(spent)),
+        el("td", { class: "num " + balanceClass(bal) }, money(bal))))
+    )));
+  }
+
+  function renderCategories(ym, cats, total) {
+    $("catMonth").textContent = monthLabel(ym);
+    const bd = $("breakdown");
+    bd.replaceChildren();
+    if (!cats.length) bd.append(el("div", { class: "empty", style: "padding:12px" }, "No expenses this month."));
+    for (const [name, amt] of cats) {
+      const c = catInfo(name);
+      const pct = (amt / total) * 100;
+      bd.append(el("div", { class: "cat-row" },
+        el("span", null, `${c.icon} ${name}`),
+        el("span", { class: "amt" }, money(amt), el("span", { class: "pct" }, `${pct.toFixed(0)}%`)),
+        el("div", { class: "bar" }, el("span", { style: `width:${pct}%;background:${c.color}` }))
+      ));
+    }
+  }
+
+  function renderClients() {
+    const list = $("clientList");
+    list.replaceChildren();
+    const totals = projectTotals();
+    const archivedCount = state.clients.filter(c => c.archived).length;
+    const shown = state.clients.filter(c => showArchived || !c.archived).sort(byName);
+    if (!state.clients.length) list.append(el("div", { class: "note", style: "margin:0" }, "No clients yet."));
+    for (const c of shown) {
+      const t = totals.get(c.id);
+      const bal = round2(t.received - t.spent);
+      let budgetLine = null, meter = null;
+      if (c.budget > 0) {
+        const left = round2(c.budget - t.spent);
+        budgetLine = el("div", { class: "totals" + (left < 0 ? " neg" : "") },
+          `Budget ${money(c.budget)} · ${left >= 0 ? money(left) + " left" : money(-left) + " over"}`);
+        meter = el("div", { class: "meter" + (left < 0 ? " is-over" : "") }, el("span", { style: `width:${Math.min(100, (t.spent / c.budget) * 100)}%` }));
+      }
+      list.append(el("div", { class: "client-item" },
+        el("div", { class: "client-name" }, c.name, c.archived ? el("span", { class: "badge" }, "archived") : null),
+        el("div", { class: "totals" },
+          `Received ${money(t.received)} · Spent ${money(t.spent)} · `,
+          el("strong", { class: balanceClass(bal) }, `Balance ${money(bal)}`)),
+        budgetLine,
+        meter,
+        el("div", { class: "btns" },
+          el("button", { class: "small", type: "button", onclick: () => startEditClient(c.id) }, "Edit"),
+          el("button", { class: "small", type: "button", onclick: () => toggleArchive(c.id) }, c.archived ? "Restore" : "Archive"),
+          el("button", { class: "small danger", type: "button", onclick: () => deleteClient(c.id) }, "Delete")
+        )
+      ));
+    }
+    const t = $("toggleArchived");
+    t.hidden = archivedCount === 0;
+    t.textContent = showArchived ? "Hide archived clients" : `Show ${plural(archivedCount, "archived client")}`;
+  }
+
+  function renderList(ym, monthExp, monthPay) {
+    const fType = $("filterType").value;
+    const fClient = $("filterClient").value;
+    const fCat = $("filterCat").value;
+    const q = $("search").value.trim().toLowerCase();
+    $("listTitle").textContent = fClient ? `${clientName(fClient)} · ${monthLabel(ym)}` : `Records · ${monthLabel(ym)}`;
+
+    const records = [];
+    if (fType !== "payment") for (const e of monthExp) records.push({ kind: "expense", r: e });
+    if (fType !== "expense" && !fCat) for (const p of monthPay) records.push({ kind: "payment", r: p });
+
+    const matches = ({ kind, r }) => {
+      if (fClient && r.clientId !== fClient) return false;
+      if (fCat && !(kind === "expense" && r.category === fCat)) return false;
+      if (!q) return true;
+      const text = kind === "expense"
+        ? [r.vendor, r.bill, r.note, r.method, r.category, ...r.lines.flatMap(l => [l.item, l.qty])]
+        : ["payment received", r.note, r.ref, r.method];
+      return [clientName(r.clientId), ...text].some(v => (v || "").toLowerCase().includes(q));
+    };
+    const shown = records.filter(matches)
+      .sort((a, b) => b.r.date.localeCompare(a.r.date) || (b.r.createdAt || 0) - (a.r.createdAt || 0));
+
+    const list = $("list");
+    list.replaceChildren();
+    if (!shown.length) {
+      list.append(el("div", { class: "empty" }, loading ? "Loading records…" : records.length ? "Nothing matches your filters." : "No records for this month. Scan a bill or fill in the form to add one."));
+      return;
+    }
+
+    const groupByClient = $("groupBy").value === "client";
+    const groups = new Map();
+    for (const rec of shown) {
+      const key = groupByClient ? rec.r.clientId : rec.r.date;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(rec);
+    }
+    let entries = [...groups.entries()];
+    if (groupByClient) entries.sort((a, b) => clientName(a[0]).localeCompare(clientName(b[0])));
+
+    for (const [key, recs] of entries) {
+      const out = sum(recs.filter(x => x.kind === "expense").map(x => x.r));
+      const inn = sum(recs.filter(x => x.kind === "payment").map(x => x.r));
+      const headTotals = [inn ? `Received ${money(inn)}` : null, out ? `Spent ${money(out)}` : null].filter(Boolean).join(" · ");
+      const group = el("div", { class: "group" },
+        el("div", { class: "group-head" },
+          el("span", null, groupByClient ? clientName(key) : dayLabel(key)),
+          el("span", null, headTotals)
+        )
+      );
+      for (const rec of recs) group.append(rec.kind === "expense" ? expenseRow(rec.r, groupByClient) : paymentRow(rec.r, groupByClient));
+      list.append(group);
+    }
+  }
+
+  function expenseRow(e, groupByClient) {
+    const c = catInfo(e.category);
+    const labels = e.lines.map(lineLabel).filter(Boolean);
+    const title = e.vendor || (labels.length === 1 ? labels[0] : labels.length ? plural(labels.length, "item") : e.category);
+    const meta = [
+      groupByClient ? dayLabel(e.date) : clientName(e.clientId),
+      e.category,
+      e.method,
+      e.bill ? `Bill ${e.bill}` : null,
+      e.note
+    ].filter(Boolean).join(" · ");
+    // List the items unless the title already is the only item.
+    const showItems = labels.length > 1 || (labels.length === 1 && e.vendor);
+    return el("div", { class: "item" },
+      el("div", { class: "dot", style: `background:${c.color}22` }, c.icon),
+      el("div", null,
+        el("div", { class: "title" }, title),
+        el("div", { class: "meta" }, meta),
+        showItems ? el("div", { class: "lview" }, ...labels.map(t => el("div", null, el("span", null, "• " + t)))) : null,
+        e.photo ? el("button", { type: "button", class: "photo-btn", title: "View bill photo", "aria-label": "View bill photo", onclick: () => showPhoto(e.photo) },
+          el("img", { src: "/_blob/" + e.photo, alt: "", loading: "lazy" })) : null
+      ),
+      el("div", { class: "amount" }, money(e.amount)),
+      el("div", { class: "actions" },
+        el("button", { class: "small", type: "button", onclick: () => startEdit(e.id) }, "Edit"),
+        el("button", { class: "small danger", type: "button", onclick: () => removeExpense(e.id) }, "Delete")
+      )
+    );
+  }
+
+  function paymentRow(p, groupByClient) {
+    const meta = [
+      groupByClient ? dayLabel(p.date) : clientName(p.clientId),
+      p.method,
+      p.ref ? `Ref ${p.ref}` : null
+    ].filter(Boolean).join(" · ");
+    return el("div", { class: "item payment" },
+      el("div", { class: "dot" }, "💰"),
+      el("div", null,
+        el("div", { class: "title" }, p.note ? `Payment received – ${p.note}` : "Payment received"),
+        el("div", { class: "meta" }, meta)
+      ),
+      el("div", { class: "amount in" }, "+" + money(p.amount)),
+      el("div", { class: "actions" },
+        el("button", { class: "small", type: "button", onclick: () => startEditPayment(p.id) }, "Edit"),
+        el("button", { class: "small danger", type: "button", onclick: () => removePayment(p.id) }, "Delete")
+      )
+    );
+  }
+
+  // ---------- expense actions ----------
+  $("addLine").addEventListener("click", () => addLine().querySelector(".l-item").focus());
+
+  $("form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    if ($("submitBtn").disabled) return;
+    const clientId = $("client").value;
+    if (!clientId || !clientById(clientId)) {
+      if (!state.clients.some(c => !c.archived)) { toast("Add a client first"); $("clientName").focus(); }
+      else { toast("Choose the client for this bill"); $("client").classList.add("needs-pick"); $("client").focus(); }
+      return;
+    }
+    const date = $("date").value;
+    if (!isDate(date)) return toast("Pick a date");
+    const lines = readLines();
+    const amount = round2(parseFloat($("amount").value));
+    if (!(amount > 0)) { toast("Enter the total amount"); $("amount").focus(); return; }
+    const data = {
+      clientId, date, lines, amount,
+      category: $("category").value,
+      vendor: $("vendor").value.trim(),
+      bill: $("bill").value.trim(),
+      method: $("method").value,
+      note: $("note").value.trim()
+    };
+
+    data.photo = editingId ? ((state.expenses.find(x => x.id === editingId) || {}).photo || "") : "";
+    if (scanPhoto) {
+      const assets = await getAssets();
+      if (assets) {
+        $("submitBtn").disabled = true;
+        $("submitBtn").textContent = "Saving photo…";
+        try { data.photo = (await assets.upload(scanPhoto)).id; }
+        catch (e) { toast("The bill photo couldn't be stored; the expense is saved without it."); }
+        finally { $("submitBtn").disabled = false; $("submitBtn").textContent = editingId ? "Save changes" : "Add expense"; }
+      }
+    }
+    clearScan();
+    const learned = rememberItems(lines, data.category);
+
+    if (editingId) {
+      const e = state.expenses.find(x => x.id === editingId);
+      if (e) Object.assign(e, data);
+      toast("Expense updated" + (learned ? ` · ${plural(learned, "new item")} added to your list` : ""));
+      stopEdit();
+    } else {
+      state.expenses.push({ id: uid(), createdAt: Date.now(), ...data });
+      toast(`Added ${money(data.amount)} for ${clientName(clientId)}` + (learned ? ` · ${plural(learned, "new item")} added to your list` : ""));
+      for (const id of ["vendor", "bill", "note", "amount"]) $(id).value = "";
+      resetLines();
+      categoryTouched = false;
+      $("vendor").focus();
+    }
+    save();
+    if (monthOf(date) !== currentMonth()) $("month").value = monthOf(date);
+    render();
+  });
+
+  function startEdit(id) {
+    const e = state.expenses.find(x => x.id === id);
+    if (!e) return;
+    stopEditPayment();
+    setTab("expense");
+    editingId = id;
+    renderClientSelects();
+    $("client").value = e.clientId;
+    $("date").value = e.date;
+    $("vendor").value = e.vendor || "";
+    $("bill").value = e.bill || "";
+    $("method").value = e.method || "Other";
+    $("note").value = e.note || "";
+    resetLines(e.lines);
+    $("amount").value = e.amount;
+    $("category").value = e.category;
+    categoryTouched = true;
+    updateItemCount();
+    $("formTitle").textContent = "Edit expense";
+    $("submitBtn").textContent = "Save changes";
+    $("cancelEdit").hidden = false;
+    $("entryCard").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function stopEdit() {
+    clearScan();
+    const keepClient = $("client").value;
+    editingId = null;
+    $("form").reset();
+    renderClientSelects();
+    if ([...$("client").options].some(o => o.value === keepClient)) $("client").value = keepClient;
+    $("date").value = todayISO();
+    resetLines();
+    categoryTouched = false;
+    $("formTitle").textContent = "Record expense";
+    $("submitBtn").textContent = "Add expense";
+    $("cancelEdit").hidden = true;
+  }
+  $("cancelEdit").addEventListener("click", stopEdit);
+  $("client").addEventListener("change", () => $("client").classList.remove("needs-pick"));
+
+  // ---------- bill photo: Claude reads it and fills the form ----------
+  let scanPhoto = null;       // the photo of the bill being entered, stored with the expense on save
+  let scanCtl = null;
+  let scanUrl = "";
+  const hostUse = name => (window.claude && typeof window.claude.use === "function" ? window.claude.use(name).catch(() => null) : Promise.resolve(null));
+  const getAssets = () => hostUse("assets");
+
+  async function setupScanner() {
+    const sample = await hostUse("sample");
+    const caps = sample ? await sample.limits().catch(() => null) : null;
+    if (!caps || !caps.images) {
+      $("scanBtns").hidden = true;
+      $("scanHint").textContent = "Reading bill photos works when this page is opened on claude.ai while signed in.";
+      return;
+    }
+    const accept = caps.images.mediaTypes.join(",");
+    $("scanCamera").accept = accept;
+    $("scanGallery").accept = accept;
+  }
+  $("scanCameraBtn").addEventListener("click", () => $("scanCamera").click());
+  $("scanGalleryBtn").addEventListener("click", () => $("scanGallery").click());
+  for (const id of ["scanCamera", "scanGallery"]) {
+    $(id).addEventListener("change", () => {
+      const file = $(id).files[0];
+      $(id).value = "";
+      if (file) scanBill(file);
+    });
+  }
+  $("scanCancel").addEventListener("click", () => {
+    if (scanCtl) scanCtl.abort();
+    clearScan();
+  });
+
+  function clearScan() {
+    if (scanCtl) { scanCtl.abort(); scanCtl = null; }
+    scanPhoto = null;
+    if (scanUrl) { URL.revokeObjectURL(scanUrl); scanUrl = ""; }
+    $("scanStatus").hidden = true;
+    $("scanBox").classList.remove("busy");
+    $("scanBtns").querySelectorAll("button").forEach(b => { b.disabled = false; });
+  }
+
+  function scanPrompt() {
+    const known = [...new Set([...state.customItems.map(i => i.name), ...CATEGORIES.flatMap(c => c.items)])].join(", ");
+    const methods = [...$("method").options].map(o => o.value).join(", ");
+    return `The image is a photo of a bill, invoice or receipt for an interior design project in India (it may be printed or handwritten, in English or Malayalam).
+Read it and reply with JSON only, in exactly this shape:
+{"isBill": true, "vendor": "", "date": "", "billNo": "", "items": [{"item": "", "qty": ""}], "total": 0, "category": "", "paymentMethod": ""}
+
+Rules:
+- vendor: the shop, supplier or contractor name on the bill.
+- date: the bill date as YYYY-MM-DD. Dates on Indian bills are day/month/year. Use "" if you can't read it.
+- billNo: the bill or invoice number, or "".
+- items: every line item, in order. "item" is the item name in plain English (no prices, no HSN codes); "qty" is the quantity with its unit as written, e.g. "10 sheets", "2 nos", "15 sqft", or "".
+  When an item is clearly one of these names, use that exact name: ${known}.
+- total: the final amount payable in rupees as a number (the grand total including tax, after any discount). If there is no printed total, add up the line amounts.
+- category: the one that covers most of the bill's value, exactly one of: ${CATEGORIES.map(c => c.name).join(", ")}.
+- paymentMethod: one of ${methods} if the bill says how it was paid, otherwise "".
+- Use "" or 0 for anything you can't read. Never guess a number you can't see.
+If the image is not a bill or receipt, reply {"isBill": false}.`;
+  }
+
+  async function scanBill(file) {
+    const sample = await hostUse("sample");
+    if (!sample) return toast("Reading bill photos isn't available in this view.");
+    clearScan();
+    scanPhoto = file;
+    scanUrl = URL.createObjectURL(file);
+    $("scanThumb").src = scanUrl;
+    $("scanStatus").hidden = false;
+    $("scanBox").classList.add("busy");
+    $("scanMsg").textContent = "Reading the bill… this can take up to a minute.";
+    $("scanCancel").textContent = "Cancel";
+    $("scanBtns").querySelectorAll("button").forEach(b => { b.disabled = true; });
+    const ctl = new AbortController();
+    scanCtl = ctl;
+    let r;
+    try {
+      r = await sample.json(scanPrompt(), { images: file, modelTier: "default", signal: ctl.signal });
+    } catch (e) {
+      if (scanCtl !== ctl) return;   // cancelled or replaced
+      scanCtl = null;
+      $("scanBox").classList.remove("busy");
+      $("scanBtns").querySelectorAll("button").forEach(b => { b.disabled = false; });
+      const code = e && e.code;
+      if (code === "cancelled") return;
+      const msg = {
+        not_granted: "Bill reading wasn't allowed. You can still fill in the form by hand.",
+        rate_limited: "Too many bills read just now. Wait a minute, then try again.",
+        image_rejected: "That photo couldn't be used. Try a clearer JPG or PNG photo.",
+        images_unavailable: "Reading photos isn't available in this view.",
+        session_expired: "Your claude.ai sign-in expired. Sign in again, then retry."
+      }[code] || "The bill couldn't be read. Try a clearer photo, or fill in the form by hand.";
+      $("scanMsg").textContent = msg;
+      $("scanCancel").textContent = "Dismiss";
+      scanPhoto = null;
+      return;
+    }
+    if (scanCtl !== ctl) return;
+    scanCtl = null;
+    $("scanBox").classList.remove("busy");
+    $("scanBtns").querySelectorAll("button").forEach(b => { b.disabled = false; });
+    if (!r || r.isBill === false) {
+      $("scanMsg").textContent = "This doesn't look like a bill. Try another photo.";
+      $("scanCancel").textContent = "Dismiss";
+      scanPhoto = null;
+      return;
+    }
+    fillFromScan(r);
+  }
+
+  function fillFromScan(r) {
+    const str = v => (v == null ? "" : String(v)).trim();
+    if (str(r.vendor)) $("vendor").value = str(r.vendor).slice(0, 80);
+    if (str(r.billNo)) $("bill").value = str(r.billNo).slice(0, 40);
+    if (isDate(str(r.date))) $("date").value = str(r.date);
+    const items = Array.isArray(r.items) ? r.items
+      .map(i => ({ item: str(i && i.item).slice(0, 60), qty: str(i && i.qty).slice(0, 30) }))
+      .filter(i => i.item || i.qty).slice(0, 60) : [];
+    if (items.length) resetLines(items);
+    const total = round2(Number(String(r.total ?? "").replace(/[^\d.]/g, "")));
+    if (total > 0) $("amount").value = total;
+    if (catByName[str(r.category)]) { $("category").value = str(r.category); categoryTouched = true; }
+    else { categoryTouched = false; autoCategory(); }
+    const method = [...$("method").options].find(o => o.value.toLowerCase() === str(r.paymentMethod).toLowerCase());
+    if (method) $("method").value = method.value;
+    updateItemCount();
+
+    const found = [items.length ? plural(items.length, "item") : null, total > 0 ? "the total" : null].filter(Boolean).join(" and ");
+    $("scanMsg").textContent = (found ? `Filled in ${found} from the photo. ` : "Some details couldn't be read. ") +
+      "Check everything, choose the client, then tap Add expense.";
+    $("scanCancel").textContent = "Remove photo";
+    if (!editingId) {
+      $("client").value = "";
+      $("client").classList.add("needs-pick");
+    }
+    $("client").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function showPhoto(id) {
+    $("photoImg").src = "/_blob/" + id;
+    $("photoModal").showModal();
+  }
+
+  function removeExpense(id) {
+    const idx = state.expenses.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const [removed] = state.expenses.splice(idx, 1);
+    if (editingId === id) stopEdit();
+    save();
+    render();
+    toast("Expense deleted", () => { state.expenses.push(removed); save(); render(); });
+  }
+
+  // ---------- payment actions ----------
+  $("payForm").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const clientId = $("payClient").value;
+    if (!clientId || !clientById(clientId)) {
+      if (!state.clients.some(c => !c.archived)) { toast("Add a client first"); $("clientName").focus(); }
+      else { toast("Choose which client paid"); $("payClient").focus(); }
+      return;
+    }
+    const amount = round2(parseFloat($("payAmount").value));
+    const date = $("payDate").value;
+    if (!(amount > 0) || !isDate(date)) return;
+    const data = { clientId, amount, date, method: $("payMethod").value, ref: $("payRef").value.trim(), note: $("payNote").value.trim() };
+
+    if (editingPayId) {
+      const p = state.payments.find(x => x.id === editingPayId);
+      if (p) Object.assign(p, data);
+      toast("Payment updated");
+      stopEditPayment();
+    } else {
+      state.payments.push({ id: uid(), createdAt: Date.now(), ...data });
+      toast(`Received ${money(amount)} from ${clientName(clientId)}`);
+      for (const id of ["payAmount", "payRef", "payNote"]) $(id).value = "";
+      $("payAmount").focus();
+    }
+    save();
+    if (monthOf(date) !== currentMonth()) $("month").value = monthOf(date);
+    render();
+  });
+
+  function startEditPayment(id) {
+    const p = state.payments.find(x => x.id === id);
+    if (!p) return;
+    stopEdit();
+    setTab("payment");
+    editingPayId = id;
+    renderClientSelects();
+    $("payClient").value = p.clientId;
+    $("payAmount").value = p.amount;
+    $("payDate").value = p.date;
+    $("payMethod").value = p.method || "Other";
+    $("payRef").value = p.ref || "";
+    $("payNote").value = p.note || "";
+    $("payTitle").textContent = "Edit payment";
+    $("paySubmit").textContent = "Save changes";
+    $("payCancel").hidden = false;
+    $("entryCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("payAmount").focus({ preventScroll: true });
+  }
+  function stopEditPayment() {
+    const keepClient = $("payClient").value;
+    editingPayId = null;
+    $("payForm").reset();
+    renderClientSelects();
+    if ([...$("payClient").options].some(o => o.value === keepClient)) $("payClient").value = keepClient;
+    $("payDate").value = todayISO();
+    $("payTitle").textContent = "Payment received";
+    $("paySubmit").textContent = "Add payment";
+    $("payCancel").hidden = true;
+  }
+  $("payCancel").addEventListener("click", stopEditPayment);
+
+  function removePayment(id) {
+    const idx = state.payments.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const [removed] = state.payments.splice(idx, 1);
+    if (editingPayId === id) stopEditPayment();
+    save();
+    render();
+    toast("Payment deleted", () => { state.payments.push(removed); save(); render(); });
+  }
+
+  // ---------- my items (custom item list) ----------
+  function rebuildItemList() {
+    itemCategory = { ...builtInCategory };
+    for (const i of state.customItems) itemCategory[i.name.toLowerCase()] = i.category;
+    const list = $("itemList");
+    list.replaceChildren();
+    for (const i of [...state.customItems].sort((a, b) => a.name.localeCompare(b.name))) list.append(el("option", { value: i.name }, i.category));
+    for (const c of CATEGORIES) for (const it of c.items) {
+      if (!state.customItems.some(i => i.name.toLowerCase() === it.toLowerCase())) list.append(el("option", { value: it }, c.name));
+    }
+  }
+  function addCustomItem(name, category) {
+    name = name.trim();
+    if (!name || itemCategory[name.toLowerCase()]) return false;
+    state.customItems.push({ id: uid(), name, category: catInfo(category).name });
+    return true;
+  }
+  // Items typed on a bill that aren't in the list yet are remembered under the bill's category.
+  function rememberItems(lines, category) {
+    let n = 0;
+    for (const l of lines) if (l.item && addCustomItem(l.item, category)) n++;
+    if (n) { rebuildItemList(); renderMyItems(); }
+    return n;
+  }
+  function renderMyItems() {
+    const box = $("myItems");
+    box.replaceChildren();
+    const builtIn = Object.keys(builtInCategory).length;
+    $("itemsInfo").textContent = `${builtIn} ready-made items + ${plural(state.customItems.length, "item")} of your own.`;
+    const q = $("itemFilter").value.trim().toLowerCase();
+    const mine = [...state.customItems].filter(i => !q || i.name.toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+    if (!state.customItems.length) {
+      box.append(el("div", { class: "note", style: "margin:0" }, "No items of your own yet. Add one above, or just type a new item on a bill — it's remembered automatically."));
+      return;
+    }
+    if (!mine.length) box.append(el("div", { class: "note", style: "margin:0" }, "No matching items."));
+    for (const i of mine) {
+      const c = catInfo(i.category);
+      box.append(el("span", { class: "chip", title: i.category },
+        `${c.icon} ${i.name}`,
+        el("button", { type: "button", "aria-label": `Remove ${i.name}`, title: "Remove from list", onclick: () => removeCustomItem(i.name) }, "✕")
+      ));
+    }
+  }
+  function removeCustomItem(name) {
+    const idx = state.customItems.findIndex(i => i.name === name);
+    if (idx < 0) return;
+    const [removed] = state.customItems.splice(idx, 1);
+    save();
+    rebuildItemList();
+    renderMyItems();
+    toast(`"${removed.name}" removed from the list`, () => { state.customItems.push(removed); save(); rebuildItemList(); renderMyItems(); });
+  }
+  $("itemForm").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const name = $("newItemName").value.trim();
+    if (!name) return;
+    if (itemCategory[name.toLowerCase()]) {
+      toast(`"${name}" is already in the list`);
+      return;
+    }
+    addCustomItem(name, $("newItemCat").value);
+    save();
+    rebuildItemList();
+    $("itemFilter").value = "";
+    renderMyItems();
+    $("newItemName").value = "";
+    $("newItemName").focus();
+    toast(`"${name}" added — pick it from the Items box on any bill`);
+  });
+  $("newItemName").addEventListener("input", () => {
+    const c = builtInCategory[$("newItemName").value.trim().toLowerCase()];
+    if (c) $("newItemCat").value = c;
+  });
+  $("itemFilter").addEventListener("input", renderMyItems);
+
+  // ---------- client actions ----------
+  function addClient(name, budget) {
+    name = name.trim();
+    if (!name) return null;
+    const existing = state.clients.find(c => c.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      toast(`"${existing.name}" already exists`);
+      return existing;
+    }
+    const c = { id: uid(), name, budget: Math.max(0, budget || 0), archived: false, createdAt: Date.now() };
+    state.clients.push(c);
+    save();
+    return c;
+  }
+
+  $("clientForm").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const name = $("clientName").value.trim();
+    const budget = Math.max(0, parseFloat($("clientBudget").value) || 0);
+    if (!name) return;
+    if (editingClientId) {
+      const clash = state.clients.find(c => c.id !== editingClientId && c.name.toLowerCase() === name.toLowerCase());
+      if (clash) return toast(`"${clash.name}" already exists`);
+      const c = clientById(editingClientId);
+      if (c) { c.name = name; c.budget = budget; }
+      save();
+      toast("Client updated");
+      stopEditClient();
+      render();
+      return;
+    }
+    const c = addClient(name, budget);
+    $("clientForm").reset();
+    render();
+    if (c && !c.archived) { $("client").value = c.id; $("payClient").value = c.id; }
+    if (c) toast(`Client "${c.name}" ready`);
+  });
+
+  function startEditClient(id) {
+    const c = clientById(id);
+    if (!c) return;
+    editingClientId = id;
+    $("clientName").value = c.name;
+    $("clientBudget").value = c.budget || "";
+    $("clientFormLabel").textContent = "Client name";
+    $("clientSubmit").textContent = "Save client";
+    $("clientCancel").hidden = false;
+    $("clientName").focus();
+  }
+  function stopEditClient() {
+    editingClientId = null;
+    $("clientForm").reset();
+    $("clientFormLabel").textContent = "Add a client";
+    $("clientSubmit").textContent = "Add client";
+    $("clientCancel").hidden = true;
+  }
+  $("clientCancel").addEventListener("click", stopEditClient);
+
+  function toggleArchive(id) {
+    const c = clientById(id);
+    if (!c) return;
+    c.archived = !c.archived;
+    save();
+    render();
+    toast(c.archived ? `"${c.name}" archived — their records stay in your reports` : `"${c.name}" restored`);
+  }
+
+  async function deleteClient(id) {
+    const c = clientById(id);
+    if (!c) return;
+    const exp = state.expenses.filter(e => e.clientId === id);
+    const pay = state.payments.filter(p => p.clientId === id);
+    const parts = [exp.length ? `${plural(exp.length, "expense")} (${money(sum(exp))})` : null, pay.length ? `${plural(pay.length, "payment")} (${money(sum(pay))})` : null].filter(Boolean);
+    const msg = parts.length
+      ? `This also deletes their ${parts.join(" and ")}.\n\nIf the project is just finished, use Archive instead — that keeps the records.`
+      : "";
+    if (!(await ask({ title: `Delete "${c.name}"?`, message: msg, okText: "Delete", danger: true }))) return;
+    const snap = { clients: state.clients.slice(), expenses: state.expenses.slice(), payments: state.payments.slice() };
+    state.clients = state.clients.filter(x => x.id !== id);
+    state.expenses = state.expenses.filter(e => e.clientId !== id);
+    state.payments = state.payments.filter(p => p.clientId !== id);
+    if (editingClientId === id) stopEditClient();
+    if (editingId && !state.expenses.some(e => e.id === editingId)) stopEdit();
+    if (editingPayId && !state.payments.some(p => p.id === editingPayId)) stopEditPayment();
+    save();
+    render();
+    toast(`"${c.name}" deleted`, () => { Object.assign(state, snap); save(); render(); });
+  }
+
+  for (const btn of document.querySelectorAll(".quick-client")) {
+    btn.addEventListener("click", async () => {
+      const name = await ask({ title: "New client", input: { label: "Client / project name", placeholder: "e.g. Arun – 3BHK, Kakkanad" }, okText: "Add client" });
+      if (!name) return;
+      const c = addClient(name);
+      render();
+      if (c && !c.archived) $(btn.dataset.target).value = c.id;
+    });
+  }
+
+  $("toggleArchived").addEventListener("click", () => { showArchived = !showArchived; renderClients(); });
+
+  // ---------- controls ----------
+  $("month").addEventListener("change", render);
+  $("prevMonth").addEventListener("click", () => { $("month").value = shiftMonth(currentMonth(), -1); render(); });
+  $("nextMonth").addEventListener("click", () => { $("month").value = shiftMonth(currentMonth(), 1); render(); });
+  $("search").addEventListener("input", render);
+  for (const id of ["filterType", "filterCat", "filterClient", "groupBy"]) $(id).addEventListener("change", render);
+
+  function applyTheme() {
+    if (state.theme) document.documentElement.setAttribute("data-theme", state.theme);
+    else document.documentElement.removeAttribute("data-theme");
+  }
+  $("themeBtn").addEventListener("click", () => {
+    const isDark = state.theme ? state.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    state.theme = isDark ? "light" : "dark";
+    applyTheme();
+    try { localStorage.setItem(THEME_KEY, state.theme); } catch (e) { /* theme just won't be remembered */ }
+  });
+
+  // ---------- CSV ----------
+  const csvCell = v => {
+    const s = String(v ?? "");
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  async function download(filename, rows) {
+    const host = window.claude;
+    const downloads = host && typeof host.use === "function" ? await host.use("downloads").catch(() => null) : null;
+    if (!downloads) return toast("Saving files isn't available in this view.");
+    // BOM so Excel opens ₹ and other symbols correctly
+    const data = "\uFEFF" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+    try {
+      const res = await downloads.save({ filename, data });
+      if (res && res.status === "saved") toast(`Saved ${filename}`);
+    } catch (e) {
+      if (e && e.code === "declined") return;
+      toast(e && e.code === "rate_limited" ? "A save is already waiting for your answer." : "The file couldn't be saved here.");
+    }
+  }
+
+  // One row per bill (items joined with "; ") and one row per payment.
+  const EXPORT_COLS = ["type", "date", "client", "vendor", "bill", "method", "note", "category", "items", "amount"];
+  const itemsText = lines => lines.map(lineLabel).filter(Boolean).join("; ");
+  function parseItems(text) {
+    return text.split(";").map(t => t.trim()).filter(Boolean).map(t => {
+      const m = t.match(/^(.*?)\s*\(([^()]*)\)$/);
+      return m ? { item: m[1].trim(), qty: m[2].trim() } : { item: t, qty: "" };
+    });
+  }
+  $("exportBtn").addEventListener("click", () => {
+    if (!state.expenses.length && !state.payments.length) return toast("Nothing to export yet");
+    const recs = [
+      ...state.expenses.map(e => ({ kind: "expense", r: e })),
+      ...state.payments.map(p => ({ kind: "payment", r: p }))
+    ].sort((a, b) => a.r.date.localeCompare(b.r.date) || (a.r.createdAt || 0) - (b.r.createdAt || 0));
+    const rows = [EXPORT_COLS];
+    for (const { kind, r } of recs) {
+      if (kind === "payment") {
+        rows.push(["payment", r.date, clientName(r.clientId), "", r.ref, r.method, r.note, "", "", r.amount]);
+      } else {
+        rows.push(["expense", r.date, clientName(r.clientId), r.vendor, r.bill, r.method, r.note, r.category, itemsText(r.lines), r.amount]);
+      }
+    }
+    download(`client-records-${todayISO()}.csv`, rows);
+  });
+
+  $("exportMonthBtn").addEventListener("click", () => {
+    const ym = currentMonth();
+    const monthExp = state.expenses.filter(e => monthOf(e.date) === ym);
+    const monthPay = state.payments.filter(p => monthOf(p.date) === ym);
+    if (!monthExp.length && !monthPay.length) return toast("Nothing recorded this month");
+    const allLines = monthExp;
+    const usedCats = CATEGORIES.map(c => c.name).filter(n => allLines.some(l => l.category === n));
+    const rows = [["client", "received", ...usedCats, "total spent", "balance"]];
+    const ids = [...new Set([...monthExp, ...monthPay].map(r => r.clientId))].sort((a, b) => clientName(a).localeCompare(clientName(b)));
+    for (const id of ids) {
+      const lines = allLines.filter(l => l.clientId === id);
+      const rec = sum(monthPay.filter(p => p.clientId === id));
+      const sp = sum(lines);
+      rows.push([clientName(id), rec, ...usedCats.map(n => sum(lines.filter(l => l.category === n)) || ""), sp, round2(rec - sp)]);
+    }
+    const rec = sum(monthPay), sp = sum(allLines);
+    rows.push(["TOTAL", rec, ...usedCats.map(n => sum(allLines.filter(l => l.category === n))), sp, round2(rec - sp)]);
+    download(`client-summary-${ym}.csv`, rows);
+  });
+
+  function parseCSV(text) {
+    text = text.replace(/^﻿/, "");
+    const rows = [];
+    let row = [], cell = "", inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+        else if (ch === '"') inQuotes = false;
+        else cell += ch;
+      } else if (ch === '"') inQuotes = true;
+      else if (ch === ",") { row.push(cell); cell = ""; }
+      else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i++;
+        row.push(cell); rows.push(row); row = []; cell = "";
+      } else cell += ch;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(c => c.trim()));
+  }
+
+  $("importBtn").addEventListener("click", () => $("importFile").click());
+  $("importFile").addEventListener("change", async () => {
+    const file = $("importFile").files[0];
+    $("importFile").value = "";
+    if (!file) return;
+    const rows = parseCSV(await file.text());
+    if (!rows.length) return toast("That file is empty");
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    const col = name => header.indexOf(name);
+    if (col("date") < 0 || col("amount") < 0 || col("client") < 0) return toast("CSV needs 'date', 'client' and 'amount' columns");
+
+    const expKey = e => `${e.date}|${e.clientId}|${e.amount}|${e.vendor}|${itemsText(e.lines)}`;
+    const payKey = p => `${p.date}|${p.clientId}|${p.amount}|${p.note}`;
+    const haveExp = new Set(state.expenses.map(expKey));
+    const havePay = new Set(state.payments.map(payKey));
+    const bills = new Map();
+    let added = 0, skipped = 0;
+
+    rows.slice(1).forEach((r, i) => {
+      const get = name => (col(name) >= 0 ? (r[col(name)] || "").trim() : "");
+      const amount = round2(parseFloat(get("amount").replace(/[^\d.\-]/g, "")));
+      const date = get("date");
+      const name = get("client");
+      if (!(amount > 0) || !isDate(date) || !name) { skipped++; return; }
+      const client = state.clients.find(c => c.name.toLowerCase() === name.toLowerCase()) || addClient(name);
+      if (get("type").toLowerCase() === "payment") {
+        const p = { id: uid(), createdAt: Date.now() + i, clientId: client.id, date, amount, method: get("method") || "Other", ref: get("bill") || get("ref"), note: get("note") };
+        if (havePay.has(payKey(p))) { skipped++; return; }
+        havePay.add(payKey(p));
+        state.payments.push(p);
+        added++;
+        return;
+      }
+      // Older exports had one row per item with a shared "record" id; those rows are merged into one bill.
+      const key = get("record") || `row-${i}`;
+      const lines = col("items") >= 0 ? parseItems(get("items")) : (get("item") || get("quantity") ? [{ item: get("item"), qty: get("quantity") || get("qty") }] : []);
+      if (!bills.has(key)) {
+        bills.set(key, {
+          id: uid(), createdAt: Date.now() + i, clientId: client.id, date,
+          vendor: get("vendor"), bill: get("bill"), method: get("method") || "Other",
+          note: get("note") || get("description"), lines: [], amount: 0,
+          category: catInfo(get("category") || itemCategory[(lines[0] && lines[0].item || "").toLowerCase()]).name
+        });
+      }
+      const bill = bills.get(key);
+      bill.lines.push(...lines);
+      bill.amount = round2(bill.amount + amount);
+    });
+    for (const e of bills.values()) {
+      if (haveExp.has(expKey(e))) { skipped++; continue; }
+      haveExp.add(expKey(e));
+      state.expenses.push(e);
+      added++;
+    }
+    save();
+    render();
+    toast(`Imported ${plural(added, "record")}${skipped ? `, skipped ${skipped}` : ""}`);
+  });
+
+  $("clearBtn").addEventListener("click", async () => {
+    if (!state.clients.length && !state.expenses.length && !state.payments.length) return toast("Nothing to delete");
+    const ok = await ask({
+      title: "Delete everything?",
+      message: `This removes all ${plural(state.clients.length, "client")}, ${plural(state.expenses.length, "expense")} and ${plural(state.payments.length, "payment")}. Export a CSV first if you might need them.`,
+      okText: "Delete all", danger: true
+    });
+    if (!ok) return;
+    const snap = { clients: state.clients, expenses: state.expenses, payments: state.payments };
+    state.clients = [];
+    state.expenses = [];
+    state.payments = [];
+    stopEdit();
+    stopEditPayment();
+    stopEditClient();
+    save();
+    render();
+    toast("Everything deleted", () => { Object.assign(state, snap); save(); render(); });
+  });
+
+  renderMyItems();
+  render();
+  setupScanner();
+  connect();
+})();
+</script>
