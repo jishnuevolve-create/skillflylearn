@@ -1,63 +1,88 @@
-<title>Client Expenses</title>
+<title>VG Constructions Expenses</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
 <style>
+  /* Layout: navy brand band with the VG mark, then a two-column register (entry on the left, reports on the right). */
   :root {
-    --bg: #F5F5FC;
+    --bg: #F2F3F7;
     --surface: #FFFFFF;
-    --surface-2: #EEEEF8;
-    --text: #14183C;
-    --muted: #5B5F82;
-    --border: #DCDCEC;
-    --primary: #2A1FA8;
+    --surface-2: #EBEDF3;
+    --text: #1D2333;
+    --muted: #5E6578;
+    --border: #D9DCE5;
+    --primary: #374255;
     --primary-text: #FFFFFF;
-    --accent: #FF7A2F;
-    --danger: #C62828;
-    --ok: #1B7F4B;
-    --ok-bg: #E3F4EA;
+    --accent: #B5414D;
+    --danger: #B3261E;
+    --ok: #23774A;
+    --ok-bg: #E2F2E9;
     --warn-bg: #FFF3E0;
     --warn-fg: #7A3E00;
     --warn-border: #FFB74D;
-    --shadow: 0 1px 2px rgba(20, 24, 60, .06), 0 4px 16px rgba(20, 24, 60, .06);
+    --band-bg: #374255;
+    --band-fg: #FFFFFF;
+    --band-muted: #C9CEDB;
+    --band-rule: rgba(255, 255, 255, .24);
+    --band-line: rgba(255, 255, 255, .045);
+    --band-ctl: rgba(255, 255, 255, .08);
+    --band-ctl-hover: rgba(255, 255, 255, .16);
+    --logo-r: #B5414D;
+    --logo-l: #E9E8E9;
+    --logo-n: #FFFFFF;
+    --logo-n-plain: #374255;
+    --chart-in: #2F8F5B;
+    --chart-out: #4A63B0;
+    --grid: #E4E7EE;
+    --shadow: 0 1px 2px rgba(29, 35, 51, .05), 0 6px 20px rgba(29, 35, 51, .06);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0F1124;
-      --surface: #181B33;
-      --surface-2: #22264A;
-      --text: #ECEDF8;
-      --muted: #A3A6C8;
-      --border: #2E3260;
-      --primary: #8C82FF;
-      --primary-text: #0F1124;
-      --accent: #FF9A5C;
-      --danger: #FF6B6B;
-      --ok: #4CD38A;
-      --ok-bg: #173A2A;
+      --bg: #12151E;
+      --surface: #1A1F2B;
+      --surface-2: #232A3A;
+      --text: #E8EBF2;
+      --muted: #A0A7B9;
+      --border: #2E3547;
+      --primary: #AEB9D6;
+      --primary-text: #12151E;
+      --accent: #E06A76;
+      --danger: #FF7A70;
+      --ok: #52C98A;
+      --ok-bg: #163626;
       --warn-bg: #3A2410;
       --warn-fg: #FFD3A8;
       --warn-border: #8A5A2B;
+      --band-bg: #232B3D;
+      --logo-n-plain: #D5DAE6;
+      --chart-in: #329E66;
+      --chart-out: #6A80D4;
+      --grid: #283044;
       --shadow: none;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0F1124;
-    --surface: #181B33;
-    --surface-2: #22264A;
-    --text: #ECEDF8;
-    --muted: #A3A6C8;
-    --border: #2E3260;
-    --primary: #8C82FF;
-    --primary-text: #0F1124;
-    --accent: #FF9A5C;
-    --danger: #FF6B6B;
-    --ok: #4CD38A;
-    --ok-bg: #173A2A;
+    --bg: #12151E;
+    --surface: #1A1F2B;
+    --surface-2: #232A3A;
+    --text: #E8EBF2;
+    --muted: #A0A7B9;
+    --border: #2E3547;
+    --primary: #AEB9D6;
+    --primary-text: #12151E;
+    --accent: #E06A76;
+    --danger: #FF7A70;
+    --ok: #52C98A;
+    --ok-bg: #163626;
     --warn-bg: #3A2410;
     --warn-fg: #FFD3A8;
     --warn-border: #8A5A2B;
+    --band-bg: #232B3D;
+    --logo-n-plain: #D5DAE6;
+    --chart-in: #329E66;
+    --chart-out: #6A80D4;
+    --grid: #283044;
     --shadow: none;
     color-scheme: dark;
   }
@@ -71,7 +96,7 @@
     font-family: "DM Sans", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2 { font-family: "Poppins", system-ui, sans-serif; margin: 0; }
+  h1, h2 { font-family: "Montserrat", system-ui, sans-serif; margin: 0; }
   h1 { font-size: 1.5rem; }
   h2 { font-size: 1.05rem; margin-bottom: 12px; }
   .wrap { max-width: 1160px; margin: 0 auto; padding: 24px 16px 48px; }
@@ -94,7 +119,7 @@
 
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
   .stat .label { color: var(--muted); font-size: .85rem; }
-  .stat .value { font-family: "Poppins", sans-serif; font-size: 1.35rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .stat .value { font-family: "Montserrat", sans-serif; font-size: 1.35rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   .stat .sub { color: var(--muted); font-size: .8rem; margin-top: 4px; }
   .neg { color: var(--danger); }
   .pos { color: var(--ok); }
@@ -169,7 +194,7 @@
   .line input { padding: 7px 9px; font-size: .92rem; }
   .line .remove { padding: 4px 10px; color: var(--muted); }
   .lines-count { color: var(--muted); font-size: .8rem; margin: -2px 0 12px; }
-  #amount { font-family: "Poppins", sans-serif; font-weight: 700; font-size: 1.05rem; }
+  #amount { font-family: "Montserrat", sans-serif; font-weight: 700; font-size: 1.05rem; }
 
   /* client summary table */
   .table-wrap { overflow-x: auto; }
@@ -231,7 +256,8 @@
     background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px;
     transition: transform .25s; z-index: 10; display: flex; width: max-content; max-width: calc(100% - 32px); gap: 12px; align-items: center;
   }
-  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast { visibility: hidden; transition: transform .25s, visibility 0s linear .25s; }
+  .toast.show { transform: translateX(-50%) translateY(0); visibility: visible; transition: transform .25s; }
   .toast button { background: transparent; color: var(--bg); border-color: currentColor; }
 
   .banner { background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-border); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: .9rem; }
@@ -253,11 +279,12 @@
     .side, .main { display: contents; }
     #entryCard { order: 1; }
     #summaryCard { order: 2; }
-    #listCard { order: 3; }
-    #clientsCard { order: 4; }
-    #itemsCard { order: 5; }
-    #catCard { order: 6; }
-    #dataCard { order: 7; }
+    #trendCard { order: 3; }
+    #listCard { order: 4; }
+    #clientsCard { order: 5; }
+    #itemsCard { order: 6; }
+    #catCard { order: 7; }
+    #dataCard { order: 8; }
     .stats { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 480px) {
@@ -286,20 +313,114 @@
     .stat { border: 1px solid var(--border) !important; padding: 10px !important; }
     .item { break-inside: avoid; }
   }
+
+  /* ---------- VG Constructions brand layer ---------- */
+  h1, h2, .stat .value, #amount, .brand-name { font-family: "Montserrat", system-ui, sans-serif; }
+  .brand {
+    background-color: var(--band-bg);
+    color: var(--band-fg);
+    color-scheme: dark;
+    background-image:
+      repeating-linear-gradient(30deg, var(--band-line) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(150deg, var(--band-line) 0 1px, transparent 1px 28px);
+    border-bottom: 3px solid var(--logo-r);
+  }
+  .brand-inner { max-width: 1160px; margin: 0 auto; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+  .brand-id { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand-mark { width: 46px; height: auto; flex: none; display: block; }
+  .brand-name { font-weight: 700; font-size: 1.12rem; letter-spacing: .05em; text-transform: uppercase; line-height: 1.1; }
+  .brand-tag { font-size: .66rem; letter-spacing: .22em; text-transform: uppercase; color: var(--band-muted); margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--band-rule); }
+  .brand .top-controls input, .brand .top-controls button { background: var(--band-ctl); border-color: var(--band-rule); color: var(--band-fg); }
+  .brand .top-controls button:hover { background: var(--band-ctl-hover); }
+  .lg-r { fill: var(--logo-r); }
+  .lg-l { fill: var(--logo-l); }
+  .lg-n { fill: var(--logo-n); }
+  .mark-plain .lg-n { fill: var(--logo-n-plain); }
+
+  .wrap { padding-top: 22px; }
+  .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px 16px; margin-bottom: 16px; }
+  .eyebrow { font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+  .page-head h1 { font-size: 1.75rem; font-weight: 700; margin-top: 2px; text-wrap: balance; }
+  .page-head p { margin: 0; color: var(--muted); font-size: .9rem; }
+
+  .card { border-radius: 12px; }
+  h2 { font-size: 1rem; font-weight: 700; letter-spacing: .01em; text-wrap: balance; }
+  .stats { gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+  .stats .stat { border: 0; border-radius: 0; box-shadow: none; padding: 16px 18px; }
+  .stat .label { font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .stat .value { font-size: 1.5rem; font-weight: 700; margin-top: 6px; }
+  .tabs button.active { box-shadow: inset 0 -2px 0 var(--accent), var(--shadow); }
+  input:focus, select:focus, button:focus-visible { outline-color: var(--accent); }
+
+  /* six-month chart */
+  .trend-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; margin-bottom: 8px; }
+  .trend-head h2 { margin: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .82rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend b { color: var(--text); font-variant-numeric: tabular-nums; }
+  #trend { position: relative; min-height: 200px; }
+  .trend-svg { width: 100%; height: auto; display: block; }
+  .trend-svg .grid { stroke: var(--grid); stroke-width: 1; }
+  .trend-svg .base { stroke: var(--border); stroke-width: 1; }
+  .trend-svg .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .trend-svg .mlabel { fill: var(--muted); font-size: 12px; }
+  .trend-svg .sel .mlabel { fill: var(--text); font-weight: 700; }
+  .trend-svg .hit { fill: transparent; rx: 6px; }
+  .trend-svg .tgroup { cursor: pointer; outline: none; }
+  .trend-svg .tgroup:hover .mlabel { fill: var(--text); }
+  .trend-svg .tgroup:focus-visible .hit { stroke: var(--accent); stroke-width: 2; }
+  .bar-in { fill: var(--chart-in); }
+  .bar-out { fill: var(--chart-out); }
+  .ttip { position: absolute; top: 0; transform: translateX(-50%); background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: 0 6px 20px rgba(0, 0, 0, .12); border-radius: 8px; padding: 8px 10px; font-size: .8rem; pointer-events: none; white-space: nowrap; z-index: 2; }
+  .ttip strong { display: block; margin-bottom: 4px; }
+  .ttip div { display: flex; justify-content: space-between; gap: 16px; font-variant-numeric: tabular-nums; }
+  .ttip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+
+  .foot { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .8rem; }
+  .foot svg { width: 24px; height: auto; flex: none; }
+  .foot strong { color: var(--text); letter-spacing: .04em; text-transform: uppercase; font-size: .75rem; }
+
+  @media (max-width: 480px) {
+    .stats .stat { padding: 12px 14px; }
+    .stat .value { font-size: 1.15rem; }
+    .brand-mark { width: 38px; }
+    .brand-name { font-size: .98rem; }
+    .brand-tag { letter-spacing: .14em; }
+    .page-head h1 { font-size: 1.4rem; }
+  }
+  @media print {
+    :root, :root[data-theme="dark"] { --band-bg: #FFFFFF; --band-fg: #1D2333; --band-muted: #444; --band-rule: #999; --band-line: transparent; --logo-n: #374255; }
+    .brand { border-bottom-width: 2px; }
+  }
 </style>
+<header class="brand">
+  <div class="brand-inner">
+    <div class="brand-id">
+      <svg class="brand-mark" viewBox="212.2 221.8 142.7 151.0" aria-hidden="true"><path class="lg-n" d="M 214.16 297.57 L 214.16 318.39 L 283.51 370.76 L 352.86 318.39 L 352.86 297.57 L 283.51 349.94 Z M 214.16 297.57"/><path class="lg-r" d="M 338.5 265.33 L 329.92 258.84 L 309.95 243.37 L 309.69 243.57 L 297.93 252.45 L 295.3 254.43 L 295.26 254.46 L 289.46 258.84 L 280.88 265.33 L 278.45 267.16 L 269.38 274.02 L 283.76 284.88 L 292.83 278.03 L 295.26 276.2 L 297.93 274.18 L 309.64 265.33 L 324.04 276.2 L 309.65 287.06 L 307.23 288.9 L 298.15 295.75 L 297.93 295.91 L 283.77 306.61 L 283.51 306.81 L 283.5 306.8 L 254.73 285.07 L 242.94 276.17 L 265.88 258.84 L 283.51 245.52 L 283.55 245.55 L 297.93 234.69 L 283.51 223.79 L 269.09 234.69 L 228.26 265.52 L 214.16 276.17 L 228.26 286.81 L 239.87 295.58 L 269.11 317.67 L 269.15 317.7 L 283.51 328.54 L 283.77 328.34 L 297.93 317.64 L 298.16 317.48 L 352.86 276.17 Z M 338.5 265.33"/><path class="lg-l" d="M 295.26 254.46 L 295.3 254.43 L 297.93 252.45 L 297.93 234.69 L 283.55 245.55 L 283.51 245.52 L 265.88 258.84 L 242.94 276.17 L 254.73 285.07 L 269.38 296.14 L 269.38 274.02 L 278.45 267.16 L 280.88 265.33 L 289.46 258.84 Z M 295.26 254.46"/><path class="lg-l" d="M 297.93 274.18 L 295.26 276.2 L 292.84 278.03 L 283.76 284.88 L 283.74 284.87 L 283.74 306.64 L 283.77 306.61 L 297.93 295.92 L 298.15 295.75 L 307.23 288.9 L 309.65 287.07 L 309.65 265.33 Z M 297.93 274.18"/></svg>
+      <div>
+        <div class="brand-name">VG Constructions</div>
+        <div class="brand-tag">Interior Designers &amp; Planners</div>
+      </div>
+    </div>
+      <div class="top-controls">
+        <input type="month" id="month" aria-label="Month">
+        <button id="prevMonth" aria-label="Previous month">‹</button>
+        <button id="nextMonth" aria-label="Next month">›</button>
+        <button id="themeBtn" aria-label="Toggle theme">◐</button>
+      </div>
+  </div>
+</header>
+
 <div class="wrap">
-  <header class="top">
+  <div class="page-head">
     <div>
-      <h1>Client Expenses</h1>
+      <div class="eyebrow">Project expense register</div>
+      <h1 id="monthTitle">This month</h1>
       <div class="print-only" id="printHeading"></div>
     </div>
-    <div class="top-controls">
-      <input type="month" id="month" aria-label="Month">
-      <button id="prevMonth" aria-label="Previous month">‹</button>
-      <button id="nextMonth" aria-label="Next month">›</button>
-      <button id="themeBtn" aria-label="Toggle theme">◐</button>
-    </div>
-  </header>
+    <p>Bills and client payments, by client</p>
+  </div>
 
   <div class="banner no-print" id="storageBanner" hidden><span id="bannerMsg"></span></div>
 
@@ -532,6 +653,17 @@
     </div>
 
     <div class="main">
+      <section class="card" id="trendCard">
+        <div class="trend-head">
+          <h2>Last 6 months</h2>
+          <div class="legend">
+            <span><i style="background: var(--chart-in)"></i>Received <b id="legIn">₹0</b></span>
+            <span><i style="background: var(--chart-out)"></i>Spent <b id="legOut">₹0</b></span>
+          </div>
+        </div>
+        <div id="trend"></div>
+      </section>
+
       <section class="card" id="summaryCard">
         <h2 id="summaryTitle">Clients this month</h2>
         <div id="summary"></div>
@@ -564,6 +696,11 @@
       </div>
     </div>
   </div>
+
+  <footer class="foot">
+    <svg class="mark-plain" viewBox="212.2 221.8 142.7 151.0" aria-hidden="true"><path class="lg-n" d="M 214.16 297.57 L 214.16 318.39 L 283.51 370.76 L 352.86 318.39 L 352.86 297.57 L 283.51 349.94 Z M 214.16 297.57"/><path class="lg-r" d="M 338.5 265.33 L 329.92 258.84 L 309.95 243.37 L 309.69 243.57 L 297.93 252.45 L 295.3 254.43 L 295.26 254.46 L 289.46 258.84 L 280.88 265.33 L 278.45 267.16 L 269.38 274.02 L 283.76 284.88 L 292.83 278.03 L 295.26 276.2 L 297.93 274.18 L 309.64 265.33 L 324.04 276.2 L 309.65 287.06 L 307.23 288.9 L 298.15 295.75 L 297.93 295.91 L 283.77 306.61 L 283.51 306.81 L 283.5 306.8 L 254.73 285.07 L 242.94 276.17 L 265.88 258.84 L 283.51 245.52 L 283.55 245.55 L 297.93 234.69 L 283.51 223.79 L 269.09 234.69 L 228.26 265.52 L 214.16 276.17 L 228.26 286.81 L 239.87 295.58 L 269.11 317.67 L 269.15 317.7 L 283.51 328.54 L 283.77 328.34 L 297.93 317.64 L 298.16 317.48 L 352.86 276.17 Z M 338.5 265.33"/><path class="lg-l" d="M 295.26 254.46 L 295.3 254.43 L 297.93 252.45 L 297.93 234.69 L 283.55 245.55 L 283.51 245.52 L 265.88 258.84 L 242.94 276.17 L 254.73 285.07 L 269.38 296.14 L 269.38 274.02 L 278.45 267.16 L 280.88 265.33 L 289.46 258.84 Z M 295.26 254.46"/><path class="lg-l" d="M 297.93 274.18 L 295.26 276.2 L 292.84 278.03 L 283.76 284.88 L 283.74 284.87 L 283.74 306.64 L 283.77 306.61 L 297.93 295.92 L 298.15 295.75 L 307.23 288.9 L 309.65 287.07 L 309.65 265.33 Z M 297.93 274.18"/></svg>
+    <span><strong>VG Constructions</strong> · Interior Designers &amp; Planners</span>
+  </footer>
 </div>
 
 <dialog class="modal" id="modal">
@@ -1006,11 +1143,109 @@
       $("statCatSub").textContent = "";
     }
 
+    $("monthTitle").textContent = monthLabel(ym);
+    renderTrend(ym);
     renderSummary(ym, monthExp, monthPay, spent, received);
     renderCategories(ym, cats, spent);
     renderClients();
     renderList(ym, monthExp, monthPay);
   }
+
+
+  // ---------- six-month chart: received vs spent ----------
+  function compactINR(n) {
+    const a = Math.abs(n);
+    const trim = x => x.replace(/\.0$/, "");
+    const s = a >= 1e7 ? trim((a / 1e7).toFixed(a >= 1e8 ? 0 : 1)) + " Cr"
+      : a >= 1e5 ? trim((a / 1e5).toFixed(a >= 1e6 ? 0 : 1)) + " L"
+      : a >= 1e3 ? Math.round(a / 1e3) + "k" : String(Math.round(a));
+    return (n < 0 ? "-₹" : "₹") + s;
+  }
+  function niceMax(v) {
+    if (!(v > 0)) return 10000;
+    const p = Math.pow(10, Math.floor(Math.log10(v)));
+    for (const m of [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * p >= v) return m * p;
+    return 10 * p;
+  }
+  const shortMonth = m => { const [y, mo] = m.split("-").map(Number); return new Date(y, mo - 1, 1).toLocaleDateString(undefined, { month: "short" }); };
+
+  function renderTrend(ym) {
+    const months = [];
+    for (let i = 5; i >= 0; i--) months.push(shiftMonth(ym, -i));
+    const data = months.map(m => ({
+      m,
+      in: sum(state.payments.filter(p => monthOf(p.date) === m)),
+      out: sum(state.expenses.filter(e => monthOf(e.date) === m))
+    }));
+    $("legIn").textContent = money(round2(data.reduce((s, d) => s + d.in, 0)));
+    $("legOut").textContent = money(round2(data.reduce((s, d) => s + d.out, 0)));
+
+    const box = $("trend");
+    box.replaceChildren();
+    const NS = "http://www.w3.org/2000/svg";
+    const s = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+    const W = Math.max(300, Math.round(box.clientWidth || 600)), H = 200, L = 50, R = 6, T = 10, B = 26;
+    const pw = W - L - R, ph = H - T - B, gw = pw / data.length;
+    const bw = Math.max(6, Math.min(24, (gw - 16) / 2));
+    const max = niceMax(Math.max(...data.map(d => Math.max(d.in, d.out))));
+    const y = v => T + ph - (v / max) * ph;
+    const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: "trend-svg", role: "group", "aria-label": "Money received and spent in each of the last six months" });
+    data.forEach((d, i) => {
+      if (d.m === ym) svg.append(s("rect", { x: L + gw * i + 2, y: T - 4, width: gw - 4, height: ph + B + 2, class: "hit", style: "fill: var(--surface-2)" }));
+    });
+    for (let i = 0; i <= 4; i++) {
+      const yy = y(max * i / 4);
+      svg.append(s("line", { x1: L, x2: W - R, y1: yy, y2: yy, class: i ? "grid" : "base" }));
+      const t = s("text", { x: L - 8, y: yy + 4, class: "tick", "text-anchor": "end" });
+      t.textContent = compactINR(max * i / 4);
+      svg.append(t);
+    }
+    // bars grow from the baseline with 4px rounded tops; 2px gap between the pair
+    const bar = (x, v) => {
+      const top = y(v), base = y(0), h = base - top;
+      if (!(h > 0.5)) return "";
+      const r = Math.min(4, h, bw / 2);
+      return `M${x},${base}V${top + r}Q${x},${top} ${x + r},${top}H${x + bw - r}Q${x + bw},${top} ${x + bw},${top + r}V${base}Z`;
+    };
+    data.forEach((d, i) => {
+      const cx = L + gw * i + gw / 2;
+      const g = s("g", { class: "tgroup" + (d.m === ym ? " sel" : ""), tabindex: "0", role: "button",
+        "aria-label": `${monthLabel(d.m)}: received ${money(d.in)}, spent ${money(d.out)}. Show this month.` });
+      g.append(s("rect", { x: L + gw * i + 2, y: T - 4, width: gw - 4, height: ph + B + 2, class: "hit" }));
+      const pIn = bar(cx - bw - 1, d.in), pOut = bar(cx + 1, d.out);
+      if (pIn) g.append(s("path", { d: pIn, class: "bar-in" }));
+      if (pOut) g.append(s("path", { d: pOut, class: "bar-out" }));
+      const lab = s("text", { x: cx, y: H - 8, class: "mlabel", "text-anchor": "middle" });
+      lab.textContent = shortMonth(d.m);
+      g.append(lab);
+      const go = () => { $("month").value = d.m; render(); };
+      g.addEventListener("click", go);
+      g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } });
+      g.addEventListener("mouseenter", () => showTip(d, cx, W));
+      g.addEventListener("focus", () => showTip(d, cx, W));
+      g.addEventListener("mouseleave", hideTip);
+      g.addEventListener("blur", hideTip);
+      svg.append(g);
+    });
+    box.append(svg, el("div", { class: "ttip", id: "ttip", hidden: "" }));
+  }
+  function showTip(d, cx, W) {
+    const tip = $("ttip");
+    if (!tip) return;
+    const bal = round2(d.in - d.out);
+    tip.replaceChildren(
+      el("strong", null, monthLabel(d.m)),
+      el("div", null, el("span", null, el("i", { style: "background: var(--chart-in)" }), "Received"), el("span", null, money(d.in))),
+      el("div", null, el("span", null, el("i", { style: "background: var(--chart-out)" }), "Spent"), el("span", null, money(d.out))),
+      el("div", null, el("span", null, "Balance"), el("b", { class: bal < 0 ? "neg" : bal > 0 ? "pos" : "" }, money(bal)))
+    );
+    tip.hidden = false;
+    const half = tip.offsetWidth / 2 + 4;
+    tip.style.left = Math.min(W - half, Math.max(half, cx)) + "px";
+  }
+  function hideTip() { const tip = $("ttip"); if (tip) tip.hidden = true; }
+  let resizeTimer;
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => renderTrend(currentMonth()), 150); });
 
   function renderSummary(ym, monthExp, monthPay, spent, received) {
     $("summaryTitle").textContent = `Clients · ${monthLabel(ym)}`;
