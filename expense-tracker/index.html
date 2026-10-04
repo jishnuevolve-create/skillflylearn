@@ -184,6 +184,22 @@
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast button { background: transparent; color: var(--bg); border-color: currentColor; }
 
+  .banner { background: #FFF3E0; color: #7A3E00; border: 1px solid #FFB74D; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: .9rem; }
+  :root[data-theme="dark"] .banner { background: #3A2410; color: #FFD3A8; border-color: #8A5A2B; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .banner { background: #3A2410; color: #FFD3A8; border-color: #8A5A2B; } }
+
+  dialog.modal {
+    border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+    background: var(--surface); color: var(--text); width: min(420px, calc(100% - 32px));
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+  }
+  dialog.modal::backdrop { background: rgba(10, 12, 30, .45); }
+  dialog.modal h2 { margin-bottom: 8px; }
+  dialog.modal p { margin: 0 0 14px; color: var(--muted); white-space: pre-line; }
+  dialog.modal .form-actions { justify-content: flex-end; margin-top: 4px; }
+  dialog.modal .form-actions .primary { flex: 0 0 auto; }
+  button.primary.danger-fill { background: var(--danger); border-color: var(--danger); color: #fff; }
+
   @media (max-width: 860px) {
     .grid { grid-template-columns: 1fr; }
     .side, .main { display: contents; }
@@ -233,6 +249,11 @@
       <button id="themeBtn" aria-label="Toggle theme">◐</button>
     </div>
   </header>
+
+  <div class="banner no-print" id="storageBanner" hidden>
+    <strong>This browser isn't letting the app save.</strong> Anything you enter will be lost when you close this page.
+    Download the file and open it directly in Chrome or Edge (not inside a preview or private window).
+  </div>
 
   <section class="stats">
     <div class="card stat">
@@ -388,6 +409,21 @@
   </div>
 </div>
 
+<dialog class="modal" id="modal">
+  <form method="dialog" id="modalForm">
+    <h2 id="modalTitle"></h2>
+    <p id="modalMsg"></p>
+    <div class="field" id="modalField" hidden>
+      <label for="modalInput" id="modalLabel"></label>
+      <input id="modalInput" type="text" maxlength="60" autocomplete="off">
+    </div>
+    <div class="form-actions">
+      <button type="button" id="modalCancel">Cancel</button>
+      <button type="submit" class="primary" id="modalOk">OK</button>
+    </div>
+  </form>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastUndo" class="small" hidden>Undo</button></div>
 
 <script>
@@ -417,35 +453,55 @@
   for (const c of CATEGORIES) for (const it of c.items) itemCategory[it.toLowerCase()] = c.name;
 
   // ---------- state ----------
+  const DEFAULT_CLIENTS = ["Soman Adva", "Arun", "Vyshnavi"];
+  let storageOk = true;
   let state = load();
   let editingId = null;
   let editingClientId = null;
   let showArchived = false;
 
   function load() {
-    const fallback = { clients: [], expenses: [], theme: "" };
+    let loaded = { clients: [], expenses: [], theme: "", seeded: false };
     try {
       const raw = localStorage.getItem(STORE_KEY);
-      if (!raw) return fallback;
-      const data = JSON.parse(raw);
-      const clients = Array.isArray(data.clients) ? data.clients.filter(c => c && typeof c.id === "string" && c.name) : [];
-      const ids = new Set(clients.map(c => c.id));
-      return {
-        clients,
-        expenses: Array.isArray(data.expenses) ? data.expenses.filter(e => validExpense(e) && ids.has(e.clientId)) : [],
-        theme: data.theme || ""
-      };
+      if (raw) {
+        const data = JSON.parse(raw);
+        const clients = Array.isArray(data.clients) ? data.clients.filter(c => c && typeof c.id === "string" && c.name) : [];
+        const ids = new Set(clients.map(c => c.id));
+        loaded = {
+          clients,
+          expenses: Array.isArray(data.expenses) ? data.expenses.filter(e => validExpense(e) && ids.has(e.clientId)) : [],
+          theme: data.theme || "",
+          seeded: !!data.seeded
+        };
+      }
     } catch (e) {
-      return fallback;
+      storageOk = false;
     }
+    // Add the studio's starting clients once; if they're deleted later they stay deleted.
+    if (!loaded.seeded) {
+      for (const name of DEFAULT_CLIENTS) {
+        if (!loaded.clients.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+          loaded.clients.push({ id: uid(), name, budget: 0, archived: false, createdAt: Date.now() });
+        }
+      }
+      loaded.seeded = true;
+    }
+    return loaded;
   }
   function save() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { toast("Couldn't save — browser storage is unavailable."); }
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      storageOk = true;
+    } catch (e) {
+      storageOk = false;
+    }
+    $("storageBanner").hidden = storageOk;
   }
   function validExpense(e) {
     return e && typeof e.id === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && Number(e.amount) > 0;
   }
-  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   const clientById = id => state.clients.find(c => c.id === id);
   const clientName = id => (clientById(id) || { name: "Unknown client" }).name;
   const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -499,6 +555,41 @@
     $("toast").classList.add("show");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => $("toast").classList.remove("show"), onUndo ? 6000 : 2500);
+  }
+
+  // In-page replacement for confirm()/prompt(), which many browsers block in previews and embedded views.
+  function ask({ title, message = "", input = null, okText = "OK", danger = false }) {
+    const modal = $("modal");
+    $("modalTitle").textContent = title;
+    $("modalMsg").textContent = message;
+    $("modalMsg").hidden = !message;
+    $("modalField").hidden = !input;
+    $("modalInput").required = !!input;
+    if (input) {
+      $("modalLabel").textContent = input.label || "";
+      $("modalInput").value = input.value || "";
+      $("modalInput").placeholder = input.placeholder || "";
+    }
+    $("modalOk").textContent = okText;
+    $("modalOk").className = "primary" + (danger ? " danger-fill" : "");
+    return new Promise(resolve => {
+      const finish = result => {
+        $("modalForm").onsubmit = null;
+        $("modalCancel").onclick = null;
+        modal.onclose = null;
+        if (modal.open) modal.close();
+        resolve(result);
+      };
+      $("modalForm").onsubmit = ev => {
+        ev.preventDefault();
+        if (input && !$("modalInput").value.trim()) return;
+        finish(input ? $("modalInput").value.trim() : true);
+      };
+      $("modalCancel").onclick = () => finish(input ? null : false);
+      modal.onclose = () => finish(input ? null : false);
+      modal.showModal();
+      (input ? $("modalInput") : $("modalOk")).focus();
+    });
   }
 
   // ---------- setup ----------
@@ -892,14 +983,14 @@
     toast(c.archived ? `"${c.name}" archived — its expenses stay in your reports` : `"${c.name}" restored`);
   }
 
-  function deleteClient(id) {
+  async function deleteClient(id) {
     const c = clientById(id);
     if (!c) return;
     const theirs = state.expenses.filter(e => e.clientId === id);
     const msg = theirs.length
-      ? `Delete "${c.name}" and their ${plural(theirs.length, "expense")} (${money(sum(theirs))})?\n\nTip: use Archive instead if the project is just finished — that keeps the records.`
-      : `Delete "${c.name}"?`;
-    if (!confirm(msg)) return;
+      ? `This also deletes their ${plural(theirs.length, "expense")} (${money(sum(theirs))}).\n\nIf the project is just finished, use Archive instead — that keeps the records.`
+      : "";
+    if (!(await ask({ title: `Delete "${c.name}"?`, message: msg, okText: "Delete", danger: true }))) return;
     const snapClients = state.clients.slice();
     const snapExpenses = state.expenses.slice();
     state.clients = state.clients.filter(x => x.id !== id);
@@ -911,9 +1002,9 @@
     toast(`"${c.name}" deleted`, () => { state.clients = snapClients; state.expenses = snapExpenses; save(); render(); });
   }
 
-  $("quickClient").addEventListener("click", () => {
-    const name = prompt("New client / project name:");
-    if (!name || !name.trim()) return;
+  $("quickClient").addEventListener("click", async () => {
+    const name = await ask({ title: "New client", input: { label: "Client / project name", placeholder: "e.g. Arun – 3BHK, Kakkanad" }, okText: "Add client" });
+    if (!name) return;
     const c = addClient(name);
     render();
     if (c && !c.archived) $("client").value = c.id;
@@ -1038,9 +1129,14 @@
     toast(`Imported ${plural(added, "expense")}${skipped ? `, skipped ${skipped}` : ""}`);
   });
 
-  $("clearBtn").addEventListener("click", () => {
-    if (!state.clients.length && !state.expenses.length) return;
-    if (!confirm(`Delete all ${plural(state.clients.length, "client")} and ${plural(state.expenses.length, "expense")}?`)) return;
+  $("clearBtn").addEventListener("click", async () => {
+    if (!state.clients.length && !state.expenses.length) return toast("Nothing to delete");
+    const ok = await ask({
+      title: "Delete everything?",
+      message: `This removes all ${plural(state.clients.length, "client")} and ${plural(state.expenses.length, "expense")}. Export a CSV first if you might need them.`,
+      okText: "Delete all", danger: true
+    });
+    if (!ok) return;
     const snap = { clients: state.clients, expenses: state.expenses };
     state.clients = [];
     state.expenses = [];
@@ -1051,6 +1147,7 @@
     toast("Everything deleted", () => { state.clients = snap.clients; state.expenses = snap.expenses; save(); render(); });
   });
 
+  save();
   render();
 })();
 </script>
