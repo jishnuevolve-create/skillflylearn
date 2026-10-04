@@ -393,6 +393,24 @@
     :root, :root[data-theme="dark"] { --band-bg: #FFFFFF; --band-fg: #1D2333; --band-muted: #444; --band-rule: #999; --band-line: transparent; --logo-n: #374255; }
     .brand { border-bottom-width: 2px; }
   }
+
+  /* client + period toolbar */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; padding: 12px 14px; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  .tb-field { display: grid; gap: 4px; margin: 0; min-width: 0; }
+  .tb-field > span { font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .tb-field select, .tb-field input { width: auto; max-width: 100%; }
+  #filterClient { min-width: 170px; font-weight: 600; }
+  .tb-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .tb-pdf { margin-left: auto; white-space: nowrap; }
+  .client-view .eyebrow { color: var(--ok); }
+  .page-head .back { border: 0; background: none; padding: 0; color: var(--primary); font-size: .85rem; margin-top: 4px; }
+  @media (max-width: 600px) {
+    .toolbar { display: grid; grid-template-columns: 1fr 1fr; }
+    .toolbar #monthCtl, .toolbar #rangeCtl, .tb-pdf { grid-column: 1 / -1; }
+    .tb-field select, .tb-field input, #filterClient { width: 100%; min-width: 0; }
+    .tb-row input { flex: 1; }
+    .tb-pdf { margin-left: 0; }
+  }
 </style>
 <header class="brand">
   <div class="brand-inner">
@@ -404,39 +422,66 @@
       </div>
     </div>
       <div class="top-controls">
-        <input type="month" id="month" aria-label="Month">
-        <button id="prevMonth" aria-label="Previous month">‹</button>
-        <button id="nextMonth" aria-label="Next month">›</button>
         <button id="themeBtn" aria-label="Toggle theme">◐</button>
       </div>
   </div>
 </header>
 
 <div class="wrap">
-  <div class="page-head">
+  <div class="page-head" id="pageHead">
     <div>
-      <div class="eyebrow">Project expense register</div>
+      <div class="eyebrow" id="eyebrow">Project expense register</div>
       <h1 id="monthTitle">This month</h1>
       <div class="print-only" id="printHeading"></div>
     </div>
-    <p>Bills and client payments, by client</p>
+    <div>
+      <p id="pageSub">Bills and client payments, by client</p>
+      <button type="button" class="back" id="backAll" hidden>← Back to all clients</button>
+    </div>
+  </div>
+
+  <div class="toolbar" role="group" aria-label="What to show">
+    <label class="tb-field"><span>Client</span><select id="filterClient"></select></label>
+    <label class="tb-field"><span>Period</span>
+      <select id="periodMode">
+        <option value="month">Month</option>
+        <option value="last3">Last 3 months</option>
+        <option value="fy">This financial year</option>
+        <option value="all">All time</option>
+        <option value="custom">Custom dates</option>
+      </select>
+    </label>
+    <div class="tb-field" id="monthCtl"><span>Month</span>
+      <div class="tb-row">
+        <button type="button" id="prevMonth" aria-label="Previous month">‹</button>
+        <input type="month" id="month" aria-label="Month">
+        <button type="button" id="nextMonth" aria-label="Next month">›</button>
+      </div>
+    </div>
+    <div class="tb-field" id="rangeCtl" hidden><span>From – to</span>
+      <div class="tb-row">
+        <input type="date" id="fromDate" aria-label="From date">
+        <input type="date" id="toDate" aria-label="To date">
+      </div>
+    </div>
+    <button type="button" class="primary tb-pdf" id="pdfBtn">⬇ Download PDF</button>
   </div>
 
   <div class="banner no-print" id="storageBanner" hidden><span id="bannerMsg"></span></div>
 
   <section class="stats">
     <div class="card stat">
-      <div class="label">Received this month</div>
+      <div class="label">Received</div>
       <div class="value pos" id="statIn">–</div>
       <div class="sub" id="statInSub"></div>
     </div>
     <div class="card stat">
-      <div class="label">Spent this month</div>
+      <div class="label">Spent</div>
       <div class="value" id="statOut">–</div>
       <div class="sub" id="statOutSub"></div>
     </div>
     <div class="card stat">
-      <div class="label">Balance this month</div>
+      <div class="label">Balance</div>
       <div class="value" id="statBal">–</div>
       <div class="sub">received − spent</div>
     </div>
@@ -643,7 +688,7 @@
         <h2>Data</h2>
         <div class="tools">
           <button id="exportBtn" type="button">Export all (CSV)</button>
-          <button id="exportMonthBtn" type="button">Month summary (CSV)</button>
+          <button id="exportMonthBtn" type="button">Period summary (CSV)</button>
           <button id="importBtn" type="button">Import CSV</button>
           <button id="clearBtn" type="button" class="danger">Delete all</button>
           <input id="importFile" type="file" accept=".csv,text/csv" hidden>
@@ -678,7 +723,6 @@
               <option value="expense">Expenses only</option>
               <option value="payment">Payments only</option>
             </select>
-            <select id="filterClient" aria-label="Filter by client"></select>
             <select id="filterCat" aria-label="Filter by category"></select>
             <select id="groupBy" aria-label="Group by">
               <option value="client">Group by client</option>
@@ -1076,6 +1120,65 @@
   $("tabExpense").addEventListener("click", () => setTab("expense"));
   $("tabPayment").addEventListener("click", () => setTab("payment"));
 
+
+  // ---------- period (month, last 3 months, financial year, all time, custom) ----------
+  let P = null;   // the period being shown, refreshed on every render
+  let lastViewClient = "";
+  const daysIn = ym => { const [y, m] = ym.split("-").map(Number); return new Date(y, m, 0).getDate(); };
+  const monthEnd = ym => `${ym}-${pad(daysIn(ym))}`;
+  const fmtDay = iso => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); };
+  const monthShortYear = ym => { const [y, m] = ym.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "numeric" }); };
+  function getPeriod() {
+    const mode = $("periodMode").value;
+    const thisMonth = monthOf(todayISO());
+    if (mode === "last3") {
+      const start = shiftMonth(thisMonth, -2);
+      return { mode, from: start + "-01", to: monthEnd(thisMonth), label: `${monthShortYear(start)} – ${monthShortYear(thisMonth)}`, slug: `${start}_to_${thisMonth}` };
+    }
+    if (mode === "fy") {
+      // Indian financial year: 1 April to 31 March
+      const [y, m] = todayISO().split("-").map(Number);
+      const fy = m >= 4 ? y : y - 1;
+      return { mode, from: `${fy}-04-01`, to: `${fy + 1}-03-31`, label: `FY ${fy}–${String(fy + 1).slice(2)}`, slug: `FY${fy}-${String(fy + 1).slice(2)}` };
+    }
+    if (mode === "all") return { mode, from: "0000-01-01", to: "9999-12-31", label: "All time", slug: "all-time" };
+    if (mode === "custom") {
+      let f = $("fromDate").value, t = $("toDate").value;
+      if (!isDate(f)) f = currentMonth() + "-01";
+      if (!isDate(t)) t = monthEnd(currentMonth());
+      if (f > t) [f, t] = [t, f];
+      return { mode, from: f, to: t, label: `${fmtDay(f)} – ${fmtDay(t)}`, slug: `${f}_to_${t}` };
+    }
+    const ym = currentMonth();
+    return { mode: "month", ym, from: ym + "-01", to: monthEnd(ym), label: monthLabel(ym), slug: ym };
+  }
+  const inP = d => d >= P.from && d <= P.to;
+  function updatePeriodControls() {
+    const mode = $("periodMode").value;
+    $("monthCtl").hidden = mode !== "month";
+    $("rangeCtl").hidden = mode !== "custom";
+  }
+  function setMonth(ym) {
+    $("periodMode").value = "month";
+    $("month").value = ym;
+    updatePeriodControls();
+  }
+  // After saving a record dated outside the period on screen, jump to its month so it's visible.
+  function showDate(date) {
+    const cur = getPeriod();
+    if (date < cur.from || date > cur.to) setMonth(monthOf(date));
+  }
+  $("periodMode").addEventListener("change", () => {
+    if ($("periodMode").value === "custom" && !($("fromDate").value && $("toDate").value)) {
+      const cur = P && P.mode !== "all" ? P : { from: currentMonth() + "-01", to: monthEnd(currentMonth()) };
+      $("fromDate").value = cur.from;
+      $("toDate").value = cur.to;
+    }
+    updatePeriodControls();
+    render();
+  });
+  for (const id of ["fromDate", "toDate"]) $(id).addEventListener("change", render);
+
   // ---------- render ----------
   function fillClientSelect(sel, archivedIdToKeep) {
     const keep = sel.value;
@@ -1113,9 +1216,12 @@
 
   function render() {
     renderClientSelects();
-    const ym = currentMonth();
-    const monthExp = state.expenses.filter(e => monthOf(e.date) === ym);
-    const monthPay = state.payments.filter(p => monthOf(p.date) === ym);
+    P = getPeriod();
+    const ym = P.ym || monthOf(P.mode === "all" ? todayISO() : (P.to < todayISO() ? P.to : todayISO()));
+    const fc = $("filterClient").value;
+    const inScope = r => inP(r.date) && (!fc || r.clientId === fc);
+    const monthExp = state.expenses.filter(inScope);
+    const monthPay = state.payments.filter(inScope);
     const spent = sum(monthExp);
     const received = sum(monthPay);
     $("printHeading").textContent = `Client expense & payment report · ${monthLabel(ym)}`;
@@ -1124,7 +1230,7 @@
     $("statIn").textContent = money(received);
     $("statInSub").textContent = plural(monthPay.length, "payment");
     $("statOut").textContent = money(spent);
-    const prevSpent = sum(state.expenses.filter(e => monthOf(e.date) === shiftMonth(ym, -1)));
+    const prevSpent = P.mode === "month" ? sum(state.expenses.filter(e => monthOf(e.date) === shiftMonth(ym, -1) && (!fc || e.clientId === fc))) : 0;
     $("statOutSub").textContent = prevSpent > 0
       ? `${spent >= prevSpent ? "▲" : "▼"} ${Math.abs(((spent - prevSpent) / prevSpent) * 100).toFixed(0)}% vs last month`
       : plural(monthExp.length, "bill");
@@ -1143,7 +1249,21 @@
       $("statCatSub").textContent = "";
     }
 
-    $("monthTitle").textContent = monthLabel(ym);
+    // heading: the client's name when one client is selected
+    document.body.classList.toggle("client-view", !!fc);
+    $("eyebrow").textContent = fc ? "Client statement" : "Project expense register";
+    $("monthTitle").textContent = fc ? clientName(fc) : P.label;
+    const c = fc && clientById(fc);
+    $("pageSub").textContent = fc ? P.label + (c && c.budget > 0 ? ` · project budget ${money(c.budget)}` : "") : "All clients · bills and payments";
+    $("backAll").hidden = !fc;
+    // opening a client's view pre-selects them in the entry forms
+    if (fc && fc !== lastViewClient) {
+      if (!editingId && clientById(fc) && !clientById(fc).archived) $("client").value = fc;
+      if (!editingPayId && clientById(fc) && !clientById(fc).archived) $("payClient").value = fc;
+      $("client").classList.remove("needs-pick");
+    }
+    lastViewClient = fc;
+    $("pdfBtn").textContent = fc ? "⬇ Download client PDF" : "⬇ Download PDF";
     renderTrend(ym);
     renderSummary(ym, monthExp, monthPay, spent, received);
     renderCategories(ym, cats, spent);
@@ -1170,12 +1290,14 @@
   const shortMonth = m => { const [y, mo] = m.split("-").map(Number); return new Date(y, mo - 1, 1).toLocaleDateString(undefined, { month: "short" }); };
 
   function renderTrend(ym) {
+    const fClient = $("filterClient").value;
     const months = [];
     for (let i = 5; i >= 0; i--) months.push(shiftMonth(ym, -i));
+    const inPeriod = m => P && m + "-01" <= P.to && monthEnd(m) >= P.from;
     const data = months.map(m => ({
       m,
-      in: sum(state.payments.filter(p => monthOf(p.date) === m)),
-      out: sum(state.expenses.filter(e => monthOf(e.date) === m))
+      in: sum(state.payments.filter(p => monthOf(p.date) === m && (!fClient || p.clientId === fClient))),
+      out: sum(state.expenses.filter(e => monthOf(e.date) === m && (!fClient || e.clientId === fClient)))
     }));
     $("legIn").textContent = money(round2(data.reduce((s, d) => s + d.in, 0)));
     $("legOut").textContent = money(round2(data.reduce((s, d) => s + d.out, 0)));
@@ -1191,7 +1313,7 @@
     const y = v => T + ph - (v / max) * ph;
     const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: "trend-svg", role: "group", "aria-label": "Money received and spent in each of the last six months" });
     data.forEach((d, i) => {
-      if (d.m === ym) svg.append(s("rect", { x: L + gw * i + 2, y: T - 4, width: gw - 4, height: ph + B + 2, class: "hit", style: "fill: var(--surface-2)" }));
+      if (inPeriod(d.m)) svg.append(s("rect", { x: L + gw * i + 2, y: T - 4, width: gw - 4, height: ph + B + 2, class: "hit", style: "fill: var(--surface-2)" }));
     });
     for (let i = 0; i <= 4; i++) {
       const yy = y(max * i / 4);
@@ -1209,7 +1331,7 @@
     };
     data.forEach((d, i) => {
       const cx = L + gw * i + gw / 2;
-      const g = s("g", { class: "tgroup" + (d.m === ym ? " sel" : ""), tabindex: "0", role: "button",
+      const g = s("g", { class: "tgroup" + (inPeriod(d.m) ? " sel" : ""), tabindex: "0", role: "button",
         "aria-label": `${monthLabel(d.m)}: received ${money(d.in)}, spent ${money(d.out)}. Show this month.` });
       g.append(s("rect", { x: L + gw * i + 2, y: T - 4, width: gw - 4, height: ph + B + 2, class: "hit" }));
       const pIn = bar(cx - bw - 1, d.in), pOut = bar(cx + 1, d.out);
@@ -1218,7 +1340,7 @@
       const lab = s("text", { x: cx, y: H - 8, class: "mlabel", "text-anchor": "middle" });
       lab.textContent = shortMonth(d.m);
       g.append(lab);
-      const go = () => { $("month").value = d.m; render(); };
+      const go = () => { setMonth(d.m); render(); };
       g.addEventListener("click", go);
       g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } });
       g.addEventListener("mouseenter", () => showTip(d, cx, W));
@@ -1245,10 +1367,10 @@
   }
   function hideTip() { const tip = $("ttip"); if (tip) tip.hidden = true; }
   let resizeTimer;
-  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => renderTrend(currentMonth()), 150); });
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => render(), 150); });
 
   function renderSummary(ym, monthExp, monthPay, spent, received) {
-    $("summaryTitle").textContent = `Clients · ${monthLabel(ym)}`;
+    $("summaryTitle").textContent = $("filterClient").value ? `Project summary · ${P.label}` : `Clients · ${P.label}`;
     const box = $("summary");
     box.replaceChildren();
     const rows = new Map();
@@ -1256,7 +1378,7 @@
     for (const e of monthExp) { const r = get(e.clientId); r.spent += e.amount; r.bills++; }
     for (const p of monthPay) { const r = get(p.clientId); r.received += p.amount; r.pays++; }
     if (!rows.size) {
-      box.append(el("div", { class: "empty" }, loading ? "Loading records…" : state.clients.length ? "No expenses or payments recorded for this month." : "Start by adding a client in the Clients section."));
+      box.append(el("div", { class: "empty" }, loading ? "Loading records…" : state.clients.length ? "No expenses or payments recorded for this period." : "Start by adding a client in the Clients section."));
       return;
     }
     const totals = projectTotals();
@@ -1279,7 +1401,7 @@
       tr.addEventListener("click", () => {
         $("filterClient").value = id === selected ? "" : id;
         render();
-        if (id !== selected) $("listCard").scrollIntoView({ behavior: "smooth", block: "start" });
+        $("pageHead").scrollIntoView({ behavior: "smooth", block: "start" });
       });
       tbody.append(tr);
     }
@@ -1297,10 +1419,10 @@
   }
 
   function renderCategories(ym, cats, total) {
-    $("catMonth").textContent = monthLabel(ym);
+    $("catMonth").textContent = P.label;
     const bd = $("breakdown");
     bd.replaceChildren();
-    if (!cats.length) bd.append(el("div", { class: "empty", style: "padding:12px" }, "No expenses this month."));
+    if (!cats.length) bd.append(el("div", { class: "empty", style: "padding:12px" }, "No expenses in this period."));
     for (const [name, amt] of cats) {
       const c = catInfo(name);
       const pct = (amt / total) * 100;
@@ -1353,7 +1475,7 @@
     const fClient = $("filterClient").value;
     const fCat = $("filterCat").value;
     const q = $("search").value.trim().toLowerCase();
-    $("listTitle").textContent = fClient ? `${clientName(fClient)} · ${monthLabel(ym)}` : `Records · ${monthLabel(ym)}`;
+    $("listTitle").textContent = fClient ? `${clientName(fClient)} · ${P.label}` : `Records · ${P.label}`;
 
     const records = [];
     if (fType !== "payment") for (const e of monthExp) records.push({ kind: "expense", r: e });
@@ -1374,7 +1496,7 @@
     const list = $("list");
     list.replaceChildren();
     if (!shown.length) {
-      list.append(el("div", { class: "empty" }, loading ? "Loading records…" : records.length ? "Nothing matches your filters." : "No records for this month. Scan a bill or fill in the form to add one."));
+      list.append(el("div", { class: "empty" }, loading ? "Loading records…" : records.length ? "Nothing matches your filters." : "No records for this period. Scan a bill or fill in the form to add one."));
       return;
     }
 
@@ -1507,7 +1629,7 @@
       $("vendor").focus();
     }
     save();
-    if (monthOf(date) !== currentMonth()) $("month").value = monthOf(date);
+    showDate(date);
     render();
   });
 
@@ -1731,7 +1853,7 @@ If the image is not a bill or receipt, reply {"isBill": false}.`;
       $("payAmount").focus();
     }
     save();
-    if (monthOf(date) !== currentMonth()) $("month").value = monthOf(date);
+    showDate(date);
     render();
   });
 
@@ -1956,8 +2078,9 @@ If the image is not a bill or receipt, reply {"isBill": false}.`;
 
   // ---------- controls ----------
   $("month").addEventListener("change", render);
-  $("prevMonth").addEventListener("click", () => { $("month").value = shiftMonth(currentMonth(), -1); render(); });
-  $("nextMonth").addEventListener("click", () => { $("month").value = shiftMonth(currentMonth(), 1); render(); });
+  $("prevMonth").addEventListener("click", () => { setMonth(shiftMonth(currentMonth(), -1)); render(); });
+  $("nextMonth").addEventListener("click", () => { setMonth(shiftMonth(currentMonth(), 1)); render(); });
+  $("backAll").addEventListener("click", () => { $("filterClient").value = ""; render(); });
   $("search").addEventListener("input", render);
   for (const id of ["filterType", "filterCat", "filterClient", "groupBy"]) $(id).addEventListener("change", render);
 
@@ -1977,19 +2100,23 @@ If the image is not a bill or receipt, reply {"isBill": false}.`;
     const s = String(v ?? "");
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  async function download(filename, rows) {
+  async function saveFile(filename, data) {
     const host = window.claude;
     const downloads = host && typeof host.use === "function" ? await host.use("downloads").catch(() => null) : null;
-    if (!downloads) return toast("Saving files isn't available in this view.");
-    // BOM so Excel opens ₹ and other symbols correctly
-    const data = "\uFEFF" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+    if (!downloads) { toast("Saving files isn't available in this view."); return false; }
     try {
       const res = await downloads.save({ filename, data });
       if (res && res.status === "saved") toast(`Saved ${filename}`);
+      return true;
     } catch (e) {
-      if (e && e.code === "declined") return;
+      if (e && e.code === "declined") return false;
       toast(e && e.code === "rate_limited" ? "A save is already waiting for your answer." : "The file couldn't be saved here.");
+      return false;
     }
+  }
+  function download(filename, rows) {
+    // BOM so Excel opens ₹ and other symbols correctly
+    return saveFile(filename, "\uFEFF" + rows.map(r => r.map(csvCell).join(",")).join("\r\n"));
   }
 
   // One row per bill (items joined with "; ") and one row per payment.
@@ -2019,23 +2146,25 @@ If the image is not a bill or receipt, reply {"isBill": false}.`;
   });
 
   $("exportMonthBtn").addEventListener("click", () => {
-    const ym = currentMonth();
-    const monthExp = state.expenses.filter(e => monthOf(e.date) === ym);
-    const monthPay = state.payments.filter(p => monthOf(p.date) === ym);
-    if (!monthExp.length && !monthPay.length) return toast("Nothing recorded this month");
-    const allLines = monthExp;
-    const usedCats = CATEGORIES.map(c => c.name).filter(n => allLines.some(l => l.category === n));
+    P = getPeriod();
+    const fc = $("filterClient").value;
+    const inScope = r => inP(r.date) && (!fc || r.clientId === fc);
+    const monthExp = state.expenses.filter(inScope);
+    const monthPay = state.payments.filter(inScope);
+    if (!monthExp.length && !monthPay.length) return toast("Nothing recorded for this period");
+    const usedCats = CATEGORIES.map(c => c.name).filter(n => monthExp.some(e => e.category === n));
     const rows = [["client", "received", ...usedCats, "total spent", "balance"]];
     const ids = [...new Set([...monthExp, ...monthPay].map(r => r.clientId))].sort((a, b) => clientName(a).localeCompare(clientName(b)));
     for (const id of ids) {
-      const lines = allLines.filter(l => l.clientId === id);
+      const exp = monthExp.filter(e => e.clientId === id);
       const rec = sum(monthPay.filter(p => p.clientId === id));
-      const sp = sum(lines);
-      rows.push([clientName(id), rec, ...usedCats.map(n => sum(lines.filter(l => l.category === n)) || ""), sp, round2(rec - sp)]);
+      const sp = sum(exp);
+      rows.push([clientName(id), rec, ...usedCats.map(n => sum(exp.filter(e => e.category === n)) || ""), sp, round2(rec - sp)]);
     }
-    const rec = sum(monthPay), sp = sum(allLines);
-    rows.push(["TOTAL", rec, ...usedCats.map(n => sum(allLines.filter(l => l.category === n))), sp, round2(rec - sp)]);
-    download(`client-summary-${ym}.csv`, rows);
+    const rec = sum(monthPay), sp = sum(monthExp);
+    rows.push(["TOTAL", rec, ...usedCats.map(n => sum(monthExp.filter(e => e.category === n))), sp, round2(rec - sp)]);
+    const who = fc ? clientName(fc).replace(/[\\/:*?"<>|]+/g, "") + "-" : "";
+    download(`client-summary-${who}${P.slug}.csv`, rows);
   });
 
   function parseCSV(text) {
@@ -2057,6 +2186,227 @@ If the image is not a bill or receipt, reply {"isBill": false}.`;
     }
     if (cell || row.length) { row.push(cell); rows.push(row); }
     return rows.filter(r => r.some(c => c.trim()));
+  }
+
+
+  // ---------- client statement PDF ----------
+  const PDF_LIBS = [
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
+  ];
+  let pdfLibs = null;
+  function loadPdfLibs() {
+    if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve();
+    if (!pdfLibs) {
+      pdfLibs = PDF_LIBS.reduce((chain, src) => chain.then(() => new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error("Could not load " + src));
+        document.head.append(s);
+      })), Promise.resolve()).catch(err => { pdfLibs = null; throw err; });
+    }
+    return pdfLibs;
+  }
+  // The VG mark from the page header, drawn to a PNG for the PDF.
+  function logoPng() {
+    return new Promise(resolve => {
+      const src = document.querySelector(".brand-mark");
+      if (!src) return resolve(null);
+      const svg = src.cloneNode(true);
+      const fills = { "lg-n": "#374255", "lg-r": "#B5414D", "lg-l": "#E9E8E9" };
+      svg.querySelectorAll("path").forEach(p => p.setAttribute("fill", fills[p.getAttribute("class")] || "#374255"));
+      svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      svg.setAttribute("width", "286");
+      svg.setAttribute("height", "302");
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = 286; c.height = 302;
+        c.getContext("2d").drawImage(img, 0, 0, 286, 302);
+        try { resolve(c.toDataURL("image/png")); } catch (e) { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+    });
+  }
+  // Standard PDF fonts have no ₹ sign, so the PDF writes amounts as "Rs. 1,20,000".
+  function pdfMoney(n) {
+    const r = round2(n);
+    const s = Math.abs(r).toLocaleString("en-IN", { minimumFractionDigits: Number.isInteger(r) ? 0 : 2, maximumFractionDigits: 2 });
+    return (r < 0 ? "-Rs. " : "Rs. ") + s;
+  }
+  const pdfSafe = t => String(t == null ? "" : t).replace(/[^\n\x20-\x7E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022]/g, "");
+
+  async function downloadPdf() {
+    const btn = $("pdfBtn");
+    if (btn.disabled) return;
+    P = getPeriod();
+    const fc = $("filterClient").value;
+    const ids = fc ? [fc] : [...new Set([...state.expenses, ...state.payments].filter(r => inP(r.date)).map(r => r.clientId))]
+      .filter(id => clientById(id)).sort((a, b) => clientName(a).localeCompare(clientName(b)));
+    if (!ids.length) return toast("Nothing recorded for this period yet.");
+    btn.disabled = true;
+    const label = btn.textContent;
+    btn.textContent = "Preparing PDF…";
+    try {
+      try { await loadPdfLibs(); }
+      catch (e) { toast("The PDF tool couldn't load. Check your internet connection and try again."); return; }
+      const doc = buildPdf(ids, !!fc, await logoPng());
+      const who = fc ? clientName(fc) : "All clients";
+      const filename = `VG Statement - ${who} - ${P.slug}`.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim() + ".pdf";
+      await saveFile(filename, doc.output("blob"), "application/pdf");
+    } catch (e) {
+      toast("The PDF couldn't be made. Try again.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+  }
+  $("pdfBtn").addEventListener("click", downloadPdf);
+
+  function buildPdf(ids, single, logo) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    const NAVY = [55, 66, 85], RED = [181, 65, 77], GREY = [94, 101, 120], GREEN = [35, 119, 74], LINE = [217, 220, 229], TINT = [243, 244, 247];
+    const W = 210, M = 14;
+    const totals = projectTotals();
+    const tableStyle = {
+      theme: "grid",
+      margin: { left: M, right: M, top: 18, bottom: 18 },
+      styles: { font: "helvetica", fontSize: 8.5, cellPadding: 2.2, lineColor: LINE, lineWidth: 0.1, textColor: [29, 35, 51], valign: "top" },
+      headStyles: { fillColor: NAVY, textColor: 255, fontStyle: "bold" },
+      footStyles: { fillColor: [235, 237, 243], textColor: NAVY, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [249, 250, 252] }
+    };
+
+    function header(title) {
+      if (logo) doc.addImage(logo, "PNG", M, 12, 15, 15.8);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(...NAVY);
+      doc.text("VG CONSTRUCTIONS", M + 19, 19);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...GREY);
+      doc.text("INTERIOR DESIGNERS & PLANNERS", M + 19, 24.5, { charSpace: 0.5 });
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...RED);
+      doc.text(title.toUpperCase(), W - M, 19, { align: "right" });
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...GREY);
+      doc.text("Generated " + fmtDay(todayISO()), W - M, 24.5, { align: "right" });
+      doc.setDrawColor(...RED); doc.setLineWidth(0.8); doc.line(M, 31, W - M, 31);
+      return 42;
+    }
+    function heading(text, y) {
+      if (y > 262) { doc.addPage(); y = 20; }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(...NAVY);
+      doc.text(text, M, y);
+      return y + 3;
+    }
+    function boxes(items, y) {
+      const gap = 4, bw = (W - 2 * M - gap * (items.length - 1)) / items.length;
+      items.forEach(([lab, val, color], i) => {
+        const x = M + i * (bw + gap);
+        doc.setFillColor(...TINT); doc.setDrawColor(...LINE); doc.setLineWidth(0.2);
+        doc.roundedRect(x, y, bw, 19, 2, 2, "FD");
+        doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(...GREY);
+        doc.text(lab.toUpperCase(), x + 4, y + 6.5, { charSpace: 0.3 });
+        doc.setFontSize(13); doc.setTextColor(...color);
+        doc.text(val, x + 4, y + 14.5);
+      });
+      return y + 19;
+    }
+
+    if (!single) {
+      let y = header("Client summary");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(...NAVY);
+      doc.text("All clients", M, y); y += 7;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...GREY);
+      doc.text("Period: " + P.label, M, y); y += 6;
+      const rows = ids.map(id => {
+        const rec = sum(state.payments.filter(p => p.clientId === id && inP(p.date)));
+        const sp = sum(state.expenses.filter(e => e.clientId === id && inP(e.date)));
+        return [pdfSafe(clientName(id)), pdfMoney(rec), pdfMoney(sp), pdfMoney(rec - sp)];
+      });
+      const rec = sum(state.payments.filter(p => inP(p.date) && ids.includes(p.clientId)));
+      const sp = sum(state.expenses.filter(e => inP(e.date) && ids.includes(e.clientId)));
+      y = boxes([["Received", pdfMoney(rec), GREEN], ["Spent", pdfMoney(sp), NAVY], ["Balance", pdfMoney(rec - sp), rec - sp < 0 ? RED : GREEN]], y) + 9;
+      y = heading("By client", y);
+      doc.autoTable({ ...tableStyle, startY: y,
+        head: [["Client", "Received", "Spent", "Balance"]], body: rows,
+        foot: [["Total", pdfMoney(rec), pdfMoney(sp), pdfMoney(rec - sp)]],
+        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+        didParseCell: d => { if (d.column.index > 0 && d.section !== "body") d.cell.styles.halign = "right"; } });
+    }
+
+    ids.forEach((id, i) => {
+      if (!single || i > 0) doc.addPage();
+      let y = header("Client statement");
+      const c = clientById(id);
+      const pay = state.payments.filter(p => p.clientId === id && inP(p.date)).sort((a, b) => a.date.localeCompare(b.date));
+      const exp = state.expenses.filter(e => e.clientId === id && inP(e.date)).sort((a, b) => a.date.localeCompare(b.date));
+      const rec = sum(pay), sp = sum(exp), bal = round2(rec - sp);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(...NAVY);
+      doc.text(pdfSafe(clientName(id)), M, y); y += 7;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(...GREY);
+      doc.text("Period: " + P.label, M, y); y += 6;
+      y = boxes([["Received", pdfMoney(rec), GREEN], ["Spent", pdfMoney(sp), NAVY], ["Balance", pdfMoney(bal), bal < 0 ? RED : GREEN]], y) + 6;
+
+      const t = totals.get(id);
+      let proj = `Whole project to date: received ${pdfMoney(t.received)} · spent ${pdfMoney(t.spent)} · balance ${pdfMoney(t.received - t.spent)}`;
+      if (c && c.budget > 0) proj += ` · budget ${pdfMoney(c.budget)} (${c.budget - t.spent >= 0 ? pdfMoney(c.budget - t.spent) + " left" : pdfMoney(t.spent - c.budget) + " over"})`;
+      doc.setFontSize(8.5); doc.setTextColor(...GREY);
+      doc.text(doc.splitTextToSize(proj, W - 2 * M), M, y); y += 10;
+
+      if (!pay.length && !exp.length) {
+        doc.setFontSize(10); doc.text("No bills or payments in this period.", M, y);
+        return;
+      }
+      if (pay.length) {
+        y = heading("Payments received", y);
+        doc.autoTable({ ...tableStyle, startY: y,
+          head: [["Date", "Details", "Received via", "Amount"]],
+          body: pay.map(p => [fmtDay(p.date), pdfSafe([p.note || "Payment", p.ref ? "Ref " + p.ref : ""].filter(Boolean).join(" · ")), p.method, pdfMoney(p.amount)]),
+          foot: [["", "", "Total received", pdfMoney(rec)]],
+          columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 32 }, 3: { halign: "right", cellWidth: 32 } },
+          didParseCell: d => { if (d.column.index === 3) d.cell.styles.halign = "right"; } });
+        y = doc.lastAutoTable.finalY + 9;
+      }
+      if (exp.length) {
+        y = heading("Bills & expenses", y);
+        doc.autoTable({ ...tableStyle, startY: y,
+          head: [["Date", "Vendor / bill", "Items", "Category", "Amount"]],
+          body: exp.map(e => [
+            fmtDay(e.date),
+            pdfSafe([e.vendor || "-", e.bill ? "Bill " + e.bill : "", e.note].filter(Boolean).join("\n")),
+            pdfSafe(e.lines.map(lineLabel).filter(Boolean).join(", ") || "-"),
+            e.category,
+            pdfMoney(e.amount)
+          ]),
+          foot: [["", "", "", "Total spent", pdfMoney(sp)]],
+          columnStyles: { 0: { cellWidth: 24 }, 1: { cellWidth: 40 }, 3: { cellWidth: 32 }, 4: { halign: "right", cellWidth: 28 } },
+          didParseCell: d => { if (d.column.index === 4) d.cell.styles.halign = "right"; } });
+        y = doc.lastAutoTable.finalY + 9;
+
+        const byCat = {};
+        for (const e of exp) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
+        const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+        if (cats.length > 1) {
+          y = heading("Spend by category", y);
+          doc.autoTable({ ...tableStyle, startY: y, tableWidth: 110,
+            head: [["Category", "Amount", "Share"]],
+            body: cats.map(([n, a]) => [n, pdfMoney(a), Math.round((a / sp) * 100) + "%"]),
+            columnStyles: { 1: { halign: "right" }, 2: { halign: "right", cellWidth: 18 } },
+            didParseCell: d => { if (d.column.index > 0) d.cell.styles.halign = "right"; } });
+        }
+      }
+    });
+
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.3); doc.line(M, 284, W - M, 284);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...GREY);
+      doc.text("VG Constructions · Interior Designers & Planners", M, 289);
+      doc.text(`Page ${i} of ${pages}`, W - M, 289, { align: "right" });
+    }
+    return doc;
   }
 
   $("importBtn").addEventListener("click", () => $("importFile").click());
