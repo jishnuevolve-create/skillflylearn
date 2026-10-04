@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Expense Tracker</title>
-<meta name="description" content="A simple personal expense tracker. Your data stays in this browser.">
+<title>Client Expenses</title>
+<meta name="description" content="Record project expenses for each interior design client and see monthly spend per client. Data stays in this browser.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
@@ -65,7 +65,7 @@
   h1, h2 { font-family: "Poppins", system-ui, sans-serif; margin: 0; }
   h1 { font-size: 1.5rem; }
   h2 { font-size: 1.05rem; margin-bottom: 12px; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
 
   header.top {
     display: flex; flex-wrap: wrap; gap: 12px;
@@ -73,6 +73,7 @@
     margin-bottom: 20px;
   }
   .top-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .print-only { display: none; }
 
   .card {
     background: var(--surface);
@@ -84,21 +85,22 @@
 
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
   .stat .label { color: var(--muted); font-size: .85rem; }
-  .stat .value { font-family: "Poppins", sans-serif; font-size: 1.35rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .stat .value { font-family: "Poppins", sans-serif; font-size: 1.35rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   .stat .sub { color: var(--muted); font-size: .8rem; margin-top: 4px; }
   .over { color: var(--danger); }
   .under { color: var(--ok); }
 
-  .meter { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 8px; }
-  .meter > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; transition: width .3s; }
+  .meter { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 6px; }
+  .meter > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
   .meter.is-over > span { background: var(--danger); }
 
   .grid { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
-  .side { display: grid; gap: 16px; }
+  .side, .main { display: grid; gap: 16px; }
 
   label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
   .field { margin-bottom: 12px; }
   .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .inline { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
   input, select, button { font: inherit; color: inherit; }
   input, select {
     width: 100%;
@@ -122,8 +124,24 @@
   button.primary:hover { filter: brightness(1.08); }
   button.danger { color: var(--danger); }
   button.small { padding: 4px 8px; font-size: .8rem; }
+  button.link { border: 0; background: none; color: var(--primary); padding: 0; font-size: .85rem; }
   .form-actions { display: flex; gap: 8px; }
   .form-actions .primary { flex: 1; }
+
+  /* client summary table */
+  .summary { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  .summary th { text-align: left; color: var(--muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 0 8px 8px; border-bottom: 1px solid var(--border); }
+  .summary td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .summary .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .summary tbody tr { cursor: pointer; }
+  .summary tbody tr:hover { background: var(--surface-2); }
+  .summary tbody tr.active { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--primary); }
+  .summary tfoot td { font-weight: 700; border-bottom: 0; }
+  .summary .share { width: 28%; }
+  .share-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .share-bar span { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+  .client-name { font-weight: 600; overflow-wrap: anywhere; }
+  .client-sub { color: var(--muted); font-size: .78rem; }
 
   .cat-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; margin-bottom: 10px; font-size: .9rem; }
   .cat-row .bar { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
@@ -131,27 +149,35 @@
   .cat-row .amt { font-variant-numeric: tabular-nums; }
   .cat-row .pct { color: var(--muted); font-size: .8rem; margin-left: 6px; }
 
+  /* clients manager */
+  .client-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .client-item:last-child { border-bottom: 0; }
+  .client-item .head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .client-item .totals { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .client-item .btns { display: flex; gap: 4px; margin-top: 6px; }
+  .badge { font-size: .7rem; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--muted); margin-left: 6px; }
+
   .list-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .list-head h2 { margin: 0; }
   .filters { display: flex; gap: 8px; flex-wrap: wrap; }
-  .filters input, .filters select { width: auto; }
+  .filters input, .filters select { width: auto; max-width: 100%; }
 
-  .day { margin-top: 14px; }
-  .day-head { display: flex; justify-content: space-between; color: var(--muted); font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 0 4px 6px; border-bottom: 1px solid var(--border); }
+  .group { margin-top: 14px; }
+  .group-head { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 0 4px 6px; border-bottom: 1px solid var(--border); }
   .item { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--border); }
   .item:last-child { border-bottom: 0; }
   .dot { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 1.1rem; }
   .item .title { font-weight: 500; overflow-wrap: anywhere; }
-  .item .meta { color: var(--muted); font-size: .8rem; }
+  .item .meta { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
   .item .amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .item .actions { display: flex; gap: 4px; }
 
-  .empty { text-align: center; color: var(--muted); padding: 32px 8px; }
+  .empty { text-align: center; color: var(--muted); padding: 28px 8px; }
   .tools { display: flex; flex-wrap: wrap; gap: 8px; }
   .note { color: var(--muted); font-size: .8rem; margin-top: 10px; }
 
   .toast {
-    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(120%);
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(150%);
     background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px;
     transition: transform .25s; z-index: 10; display: flex; width: max-content; max-width: calc(100% - 32px); gap: 12px; align-items: center;
   }
@@ -160,23 +186,45 @@
 
   @media (max-width: 860px) {
     .grid { grid-template-columns: 1fr; }
-    .side { display: contents; }
+    .side, .main { display: contents; }
     #form { order: 1; }
-    #listCard { order: 2; }
-    .side > .card:not(#form) { order: 3; }
+    #summaryCard { order: 2; }
+    #listCard { order: 3; }
+    #clientsCard { order: 4; }
+    #catCard { order: 5; }
+    #dataCard { order: 6; }
     .stats { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 480px) {
     .item { grid-template-columns: 32px 1fr auto; }
     .item .actions { grid-column: 2 / -1; justify-content: flex-end; }
     .dot { width: 32px; height: 32px; }
+    .summary .share { display: none; }
+  }
+
+  @media print {
+    :root, :root[data-theme="dark"] {
+      --bg: #fff; --surface: #fff; --surface-2: #eee; --text: #000; --muted: #444; --border: #ccc; --primary: #2A1FA8; --shadow: none;
+    }
+    .wrap { max-width: none; padding: 0; }
+    .no-print, #form, #clientsCard, #dataCard, .top-controls, .item .actions, .filters, .toast { display: none !important; }
+    .print-only { display: block; }
+    .grid { grid-template-columns: 1fr; }
+    .card { border: 0; padding: 0; break-inside: auto; }
+    .summary tbody tr.active { box-shadow: none; }
+    .stats { grid-template-columns: repeat(4, 1fr); }
+    .stat { border: 1px solid var(--border) !important; padding: 10px !important; }
+    .group { break-inside: avoid; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <h1>Expense Tracker</h1>
+    <div>
+      <h1>Client Expenses</h1>
+      <div class="print-only" id="printHeading"></div>
+    </div>
     <div class="top-controls">
       <input type="month" id="month" aria-label="Month">
       <button id="prevMonth" aria-label="Previous month">‹</button>
@@ -188,6 +236,7 @@
         <option value="GBP">£ GBP</option>
         <option value="AED">AED</option>
       </select>
+      <button id="printBtn" type="button">Print / PDF</button>
       <button id="themeBtn" aria-label="Toggle theme">◐</button>
     </div>
   </header>
@@ -199,26 +248,33 @@
       <div class="sub" id="statPrev"></div>
     </div>
     <div class="card stat">
-      <div class="label">Budget left</div>
-      <div class="value" id="statBudget">–</div>
-      <div class="meter" id="budgetMeter"><span></span></div>
+      <div class="label">Clients with spend</div>
+      <div class="value" id="statClients">–</div>
+      <div class="sub" id="statClientsSub"></div>
     </div>
     <div class="card stat">
-      <div class="label">Daily average</div>
-      <div class="value" id="statAvg">–</div>
-      <div class="sub" id="statAvgSub"></div>
+      <div class="label">Highest-spend client</div>
+      <div class="value" id="statTop">–</div>
+      <div class="sub" id="statTopSub"></div>
     </div>
     <div class="card stat">
       <div class="label">Biggest category</div>
-      <div class="value" id="statTop">–</div>
-      <div class="sub" id="statTopSub"></div>
+      <div class="value" id="statCat">–</div>
+      <div class="sub" id="statCatSub"></div>
     </div>
   </section>
 
   <div class="grid">
     <div class="side">
       <form class="card" id="form" autocomplete="off">
-        <h2 id="formTitle">Add expense</h2>
+        <h2 id="formTitle">Record expense</h2>
+        <div class="field">
+          <label for="client">Client / project</label>
+          <div class="inline">
+            <select id="client" required></select>
+            <button type="button" id="quickClient" title="Add a new client">+ New</button>
+          </div>
+        </div>
         <div class="row-2">
           <div class="field">
             <label for="amount">Amount</label>
@@ -234,19 +290,30 @@
           <select id="category" required></select>
         </div>
         <div class="field">
-          <label for="note">Note</label>
-          <input id="note" type="text" maxlength="120" placeholder="e.g. Lunch with team">
+          <label for="vendor">Vendor / paid to</label>
+          <input id="vendor" type="text" maxlength="80" placeholder="e.g. Sharma Plywood">
         </div>
         <div class="field">
-          <label for="method">Paid with</label>
-          <select id="method">
-            <option>UPI</option>
-            <option>Cash</option>
-            <option>Debit card</option>
-            <option>Credit card</option>
-            <option>Net banking</option>
-            <option>Other</option>
-          </select>
+          <label for="note">Description</label>
+          <input id="note" type="text" maxlength="160" placeholder="e.g. 12 sheets 18mm BWP ply for kitchen">
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="method">Paid with</label>
+            <select id="method">
+              <option>UPI</option>
+              <option>Cash</option>
+              <option>Bank transfer</option>
+              <option>Debit card</option>
+              <option>Credit card</option>
+              <option>Cheque</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bill">Bill / invoice no.</label>
+            <input id="bill" type="text" maxlength="40" placeholder="Optional">
+          </div>
         </div>
         <div class="form-actions">
           <button type="submit" class="primary" id="submitBtn">Add expense</button>
@@ -254,41 +321,66 @@
         </div>
       </form>
 
-      <div class="card">
-        <h2>Monthly budget</h2>
-        <form id="budgetForm" class="row-2" style="grid-template-columns: 1fr auto;">
-          <input id="budget" type="number" min="0" step="1" inputmode="numeric" placeholder="Set a budget" aria-label="Monthly budget">
-          <button type="submit">Save</button>
+      <div class="card" id="clientsCard">
+        <h2>Clients</h2>
+        <form id="clientForm" autocomplete="off">
+          <div class="field">
+            <label for="clientName" id="clientFormLabel">Add a client</label>
+            <input id="clientName" type="text" maxlength="60" required placeholder="e.g. Mehta Residence, Kochi">
+          </div>
+          <div class="field">
+            <label for="clientBudget">Project budget (optional)</label>
+            <input id="clientBudget" type="number" min="0" step="1" inputmode="numeric" placeholder="Total for the whole project">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary" id="clientSubmit">Add client</button>
+            <button type="button" id="clientCancel" hidden>Cancel</button>
+          </div>
         </form>
+        <div id="clientList" style="margin-top:12px"></div>
+        <button type="button" class="link" id="toggleArchived" hidden></button>
       </div>
 
-      <div class="card">
-        <h2>By category</h2>
+      <div class="card" id="catCard">
+        <h2>By category · <span id="catMonth"></span></h2>
         <div id="breakdown"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="dataCard">
         <h2>Data</h2>
         <div class="tools">
-          <button id="exportBtn" type="button">Export CSV</button>
+          <button id="exportBtn" type="button">Export all (CSV)</button>
+          <button id="exportMonthBtn" type="button">Month summary (CSV)</button>
           <button id="importBtn" type="button">Import CSV</button>
           <button id="clearBtn" type="button" class="danger">Delete all</button>
           <input id="importFile" type="file" accept=".csv,text/csv" hidden>
         </div>
-        <p class="note">Your expenses are saved only in this browser. Export a CSV now and then as a backup.</p>
+        <p class="note">Everything is saved only in this browser. Export a CSV regularly as a backup.</p>
       </div>
     </div>
 
-    <section class="card" id="listCard">
-      <div class="list-head">
-        <h2 id="listTitle">Expenses</h2>
-        <div class="filters">
-          <input id="search" type="search" placeholder="Search notes" aria-label="Search">
-          <select id="filterCat" aria-label="Filter by category"></select>
+    <div class="main">
+      <section class="card" id="summaryCard">
+        <h2 id="summaryTitle">Spend by client</h2>
+        <div id="summary"></div>
+      </section>
+
+      <section class="card" id="listCard">
+        <div class="list-head">
+          <h2 id="listTitle">Expenses</h2>
+          <div class="filters">
+            <select id="filterClient" aria-label="Filter by client"></select>
+            <select id="filterCat" aria-label="Filter by category"></select>
+            <select id="groupBy" aria-label="Group by">
+              <option value="client">Group by client</option>
+              <option value="day">Group by date</option>
+            </select>
+            <input id="search" type="search" placeholder="Search" aria-label="Search">
+          </div>
         </div>
-      </div>
-      <div id="list"></div>
-    </section>
+        <div id="list"></div>
+      </section>
+    </div>
   </div>
 </div>
 
@@ -298,19 +390,21 @@
 (function () {
   "use strict";
 
-  const STORE_KEY = "expense-tracker.v1";
+  const STORE_KEY = "client-expenses.v1";
   const CATEGORIES = [
-    { name: "Food & Dining",  icon: "🍽️", color: "#FF7A2F" },
-    { name: "Groceries",      icon: "🛒", color: "#2FA36B" },
-    { name: "Transport",      icon: "🚗", color: "#2A7FD8" },
-    { name: "Rent & Housing", icon: "🏠", color: "#7A4FD8" },
-    { name: "Bills & Utilities", icon: "💡", color: "#D8A12A" },
-    { name: "Shopping",       icon: "🛍️", color: "#D8457A" },
-    { name: "Health",         icon: "💊", color: "#1FA8A0" },
-    { name: "Entertainment",  icon: "🎬", color: "#A84FD8" },
-    { name: "Education",      icon: "📚", color: "#4F6BD8" },
-    { name: "Travel",         icon: "✈️", color: "#3FA8D8" },
-    { name: "Other",          icon: "📦", color: "#8A8FA8" }
+    { name: "Materials",           icon: "🪵", color: "#B07A3F" },
+    { name: "Furniture",           icon: "🛋️", color: "#7A4FD8" },
+    { name: "Lighting & Electrical", icon: "💡", color: "#D8A12A" },
+    { name: "Fabric & Upholstery", icon: "🧵", color: "#D8457A" },
+    { name: "Paint & Finishes",    icon: "🎨", color: "#2FA36B" },
+    { name: "Hardware & Fittings", icon: "🔩", color: "#5B6B8A" },
+    { name: "Decor & Accessories", icon: "🖼️", color: "#FF7A2F" },
+    { name: "Plumbing & Sanitary", icon: "🚿", color: "#2A7FD8" },
+    { name: "Labour & Contractors", icon: "👷", color: "#C2562A" },
+    { name: "Transport & Delivery", icon: "🚚", color: "#1FA8A0" },
+    { name: "Site Visit & Travel", icon: "🚗", color: "#4F6BD8" },
+    { name: "Printing & Samples",  icon: "📐", color: "#A84FD8" },
+    { name: "Other",               icon: "📦", color: "#8A8FA8" }
   ];
   const catByName = Object.fromEntries(CATEGORIES.map(c => [c.name, c]));
   const catInfo = name => catByName[name] || catByName.Other;
@@ -318,17 +412,20 @@
   // ---------- state ----------
   let state = load();
   let editingId = null;
-  let undoSnapshot = null;
+  let editingClientId = null;
+  let showArchived = false;
 
   function load() {
-    const fallback = { expenses: [], budget: 0, currency: "INR", theme: "" };
+    const fallback = { clients: [], expenses: [], currency: "INR", theme: "" };
     try {
       const raw = localStorage.getItem(STORE_KEY);
       if (!raw) return fallback;
       const data = JSON.parse(raw);
+      const clients = Array.isArray(data.clients) ? data.clients.filter(c => c && typeof c.id === "string" && c.name) : [];
+      const ids = new Set(clients.map(c => c.id));
       return {
-        expenses: Array.isArray(data.expenses) ? data.expenses.filter(validExpense) : [],
-        budget: Number(data.budget) || 0,
+        clients,
+        expenses: Array.isArray(data.expenses) ? data.expenses.filter(e => validExpense(e) && ids.has(e.clientId)) : [],
         currency: data.currency || "INR",
         theme: data.theme || ""
       };
@@ -343,13 +440,16 @@
     return e && typeof e.id === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && Number(e.amount) > 0;
   }
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const clientById = id => state.clients.find(c => c.id === id);
+  const clientName = id => (clientById(id) || { name: "Unknown client" }).name;
+  const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 
   // ---------- helpers ----------
   const $ = id => document.getElementById(id);
   const pad = n => String(n).padStart(2, "0");
   const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const monthOf = iso => iso.slice(0, 7);
-  const daysInMonth = ym => { const [y, m] = ym.split("-").map(Number); return new Date(y, m, 0).getDate(); };
+  const currentMonth = () => $("month").value || monthOf(todayISO());
   function shiftMonth(ym, delta) {
     const [y, m] = ym.split("-").map(Number);
     const d = new Date(y, m - 1 + delta, 1);
@@ -369,12 +469,10 @@
   }
   function dayLabel(iso) {
     const [y, m, d] = iso.split("-").map(Number);
-    const date = new Date(y, m - 1, d);
-    if (iso === todayISO()) return "Today";
-    const yest = new Date(); yest.setDate(yest.getDate() - 1);
-    if (date.toDateString() === yest.toDateString()) return "Yesterday";
-    return date.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
   }
+  const sum = arr => arr.reduce((s, e) => s + e.amount, 0);
+  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   function el(tag, attrs, ...children) {
     const node = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs || {})) {
@@ -406,14 +504,36 @@
   $("month").value = monthOf(todayISO());
   $("date").value = todayISO();
   $("currency").value = state.currency;
-  if (state.budget) $("budget").value = state.budget;
   applyTheme();
 
   // ---------- render ----------
+  function renderClientSelects() {
+    const formSel = $("client");
+    const keep = formSel.value;
+    formSel.replaceChildren();
+    const active = state.clients.filter(c => !c.archived).sort(byName);
+    if (!active.length) formSel.append(el("option", { value: "" }, "Add a client first →"));
+    for (const c of active) formSel.append(el("option", { value: c.id }, c.name));
+    // keep an archived client selectable while editing one of its expenses
+    const editing = editingId && state.expenses.find(x => x.id === editingId);
+    if (editing && clientById(editing.clientId)?.archived) {
+      formSel.append(el("option", { value: editing.clientId }, `${clientName(editing.clientId)} (archived)`));
+    }
+    if ([...formSel.options].some(o => o.value === keep)) formSel.value = keep;
+
+    const fSel = $("filterClient");
+    const keepF = fSel.value;
+    fSel.replaceChildren(el("option", { value: "" }, "All clients"));
+    for (const c of [...state.clients].sort(byName)) fSel.append(el("option", { value: c.id }, c.name + (c.archived ? " (archived)" : "")));
+    fSel.value = [...fSel.options].some(o => o.value === keepF) ? keepF : "";
+  }
+
   function render() {
-    const ym = $("month").value || monthOf(todayISO());
+    renderClientSelects();
+    const ym = currentMonth();
     const monthExpenses = state.expenses.filter(e => monthOf(e.date) === ym);
     const total = sum(monthExpenses);
+    $("printHeading").textContent = `Expense report · ${monthLabel(ym)}`;
 
     // stats
     $("statTotal").textContent = money(total);
@@ -421,47 +541,86 @@
     if (prevTotal > 0) {
       const diff = ((total - prevTotal) / prevTotal) * 100;
       $("statPrev").textContent = `${diff >= 0 ? "▲" : "▼"} ${Math.abs(diff).toFixed(0)}% vs last month`;
-      $("statPrev").className = "sub " + (diff > 0 ? "over" : "under");
     } else {
-      $("statPrev").textContent = `${monthExpenses.length} transaction${monthExpenses.length === 1 ? "" : "s"}`;
-      $("statPrev").className = "sub";
+      $("statPrev").textContent = plural(monthExpenses.length, "expense");
     }
 
-    const meter = $("budgetMeter");
-    if (state.budget > 0) {
-      const left = state.budget - total;
-      $("statBudget").textContent = money(left);
-      $("statBudget").className = "value " + (left < 0 ? "over" : "");
-      meter.hidden = false;
-      meter.classList.toggle("is-over", left < 0);
-      meter.firstElementChild.style.width = Math.min(100, (total / state.budget) * 100) + "%";
-    } else {
-      $("statBudget").textContent = "Not set";
-      $("statBudget").className = "value";
-      meter.hidden = true;
+    const byClient = new Map();
+    for (const e of monthExpenses) {
+      const row = byClient.get(e.clientId) || { total: 0, count: 0 };
+      row.total += e.amount; row.count++;
+      byClient.set(e.clientId, row);
     }
-
-    const isCurrent = ym === monthOf(todayISO());
-    const daysElapsed = isCurrent ? new Date().getDate() : daysInMonth(ym);
-    $("statAvg").textContent = money(total / daysElapsed);
-    $("statAvgSub").textContent = isCurrent ? `over ${daysElapsed} day${daysElapsed === 1 ? "" : "s"} so far` : `over ${daysElapsed} days`;
-
-    const byCat = {};
-    for (const e of monthExpenses) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
-    const sorted = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
-    if (sorted.length) {
-      $("statTop").textContent = `${catInfo(sorted[0][0]).icon} ${sorted[0][0]}`;
-      $("statTopSub").textContent = `${money(sorted[0][1])} · ${((sorted[0][1] / total) * 100).toFixed(0)}% of spend`;
+    const clientRows = [...byClient.entries()].sort((a, b) => b[1].total - a[1].total);
+    $("statClients").textContent = String(clientRows.length);
+    $("statClientsSub").textContent = `of ${plural(state.clients.filter(c => !c.archived).length, "active client")}`;
+    if (clientRows.length) {
+      $("statTop").textContent = clientName(clientRows[0][0]);
+      $("statTopSub").textContent = `${money(clientRows[0][1].total)} · ${((clientRows[0][1].total / total) * 100).toFixed(0)}% of month`;
     } else {
       $("statTop").textContent = "–";
       $("statTopSub").textContent = "";
     }
 
-    // breakdown
+    const byCat = {};
+    for (const e of monthExpenses) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
+    const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    if (cats.length) {
+      $("statCat").textContent = `${catInfo(cats[0][0]).icon} ${cats[0][0]}`;
+      $("statCatSub").textContent = `${money(cats[0][1])} · ${((cats[0][1] / total) * 100).toFixed(0)}% of month`;
+    } else {
+      $("statCat").textContent = "–";
+      $("statCatSub").textContent = "";
+    }
+
+    renderSummary(ym, clientRows, total);
+    renderCategories(ym, cats, total);
+    renderClients();
+    renderList(ym, monthExpenses);
+  }
+
+  function renderSummary(ym, clientRows, total) {
+    $("summaryTitle").textContent = `Spend by client · ${monthLabel(ym)}`;
+    const box = $("summary");
+    box.replaceChildren();
+    if (!clientRows.length) {
+      box.append(el("div", { class: "empty" }, state.clients.length ? "No client expenses recorded for this month." : "Start by adding a client, then record expenses against them."));
+      return;
+    }
+    const allTime = clientTotals();
+    const selected = $("filterClient").value;
+    const tbody = el("tbody");
+    for (const [id, row] of clientRows) {
+      const c = clientById(id);
+      const pct = (row.total / total) * 100;
+      let sub = plural(row.count, "expense");
+      if (c && c.budget > 0) sub += ` · project ${money(allTime.get(id) || 0)} of ${money(c.budget)}`;
+      const tr = el("tr", { class: id === selected ? "active" : "", title: "Show this client's expenses" },
+        el("td", null, el("div", { class: "client-name" }, clientName(id)), el("div", { class: "client-sub" }, sub)),
+        el("td", { class: "share" }, el("div", { class: "share-bar" }, el("span", { style: `width:${pct}%` }))),
+        el("td", { class: "num" }, `${pct.toFixed(0)}%`),
+        el("td", { class: "num" }, money(row.total))
+      );
+      tr.addEventListener("click", () => {
+        $("filterClient").value = id === selected ? "" : id;
+        render();
+        if (id !== selected) $("listCard").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      tbody.append(tr);
+    }
+    box.append(el("table", { class: "summary" },
+      el("thead", null, el("tr", null, el("th", null, "Client"), el("th", { class: "share" }, ""), el("th", { class: "num" }, "Share"), el("th", { class: "num" }, "Spent"))),
+      tbody,
+      el("tfoot", null, el("tr", null, el("td", null, "Total"), el("td", { class: "share" }, ""), el("td", { class: "num" }, ""), el("td", { class: "num" }, money(total))))
+    ));
+  }
+
+  function renderCategories(ym, cats, total) {
+    $("catMonth").textContent = monthLabel(ym);
     const bd = $("breakdown");
     bd.replaceChildren();
-    if (!sorted.length) bd.append(el("div", { class: "empty", style: "padding:12px" }, "Nothing spent this month yet."));
-    for (const [name, amt] of sorted) {
+    if (!cats.length) bd.append(el("div", { class: "empty", style: "padding:12px" }, "Nothing recorded this month."));
+    for (const [name, amt] of cats) {
       const c = catInfo(name);
       const pct = (amt / total) * 100;
       bd.append(el("div", { class: "cat-row" },
@@ -470,57 +629,128 @@
         el("div", { class: "bar" }, el("span", { style: `width:${pct}%;background:${c.color}` }))
       ));
     }
+  }
 
-    // list
-    $("listTitle").textContent = `Expenses · ${monthLabel(ym)}`;
+  function clientTotals() {
+    const m = new Map();
+    for (const e of state.expenses) m.set(e.clientId, (m.get(e.clientId) || 0) + e.amount);
+    return m;
+  }
+
+  function renderClients() {
+    const list = $("clientList");
+    list.replaceChildren();
+    const totals = clientTotals();
+    const archivedCount = state.clients.filter(c => c.archived).length;
+    const shown = state.clients.filter(c => showArchived || !c.archived).sort(byName);
+    if (!state.clients.length) list.append(el("div", { class: "note", style: "margin:0" }, "No clients yet."));
+    for (const c of shown) {
+      const spent = totals.get(c.id) || 0;
+      let totalsText = `${money(spent)} spent in total`;
+      let meter = null;
+      if (c.budget > 0) {
+        const left = c.budget - spent;
+        totalsText = `${money(spent)} of ${money(c.budget)} · ${left >= 0 ? money(left) + " left" : money(-left) + " over"}`;
+        meter = el("div", { class: "meter" + (left < 0 ? " is-over" : "") }, el("span", { style: `width:${Math.min(100, (spent / c.budget) * 100)}%` }));
+      }
+      list.append(el("div", { class: "client-item" },
+        el("div", { class: "head" },
+          el("span", { class: "client-name" }, c.name, c.archived ? el("span", { class: "badge" }, "archived") : null)
+        ),
+        el("div", { class: "totals" + (c.budget > 0 && spent > c.budget ? " over" : "") }, totalsText),
+        meter,
+        el("div", { class: "btns" },
+          el("button", { class: "small", type: "button", onclick: () => startEditClient(c.id) }, "Edit"),
+          el("button", { class: "small", type: "button", onclick: () => toggleArchive(c.id) }, c.archived ? "Restore" : "Archive"),
+          el("button", { class: "small danger", type: "button", onclick: () => deleteClient(c.id) }, "Delete")
+        )
+      ));
+    }
+    const t = $("toggleArchived");
+    t.hidden = archivedCount === 0;
+    t.textContent = showArchived ? "Hide archived clients" : `Show ${plural(archivedCount, "archived client")}`;
+  }
+
+  function renderList(ym, monthExpenses) {
+    const fClient = $("filterClient").value;
+    $("listTitle").textContent = fClient ? `${clientName(fClient)} · ${monthLabel(ym)}` : `Expenses · ${monthLabel(ym)}`;
     const q = $("search").value.trim().toLowerCase();
     const fc = $("filterCat").value;
     const shown = monthExpenses
-      .filter(e => (!fc || e.category === fc) && (!q || (e.note || "").toLowerCase().includes(q) || e.category.toLowerCase().includes(q) || (e.method || "").toLowerCase().includes(q)))
+      .filter(e => (!fClient || e.clientId === fClient) && (!fc || e.category === fc))
+      .filter(e => !q || [e.note, e.vendor, e.bill, e.category, e.method, clientName(e.clientId)].some(v => (v || "").toLowerCase().includes(q)))
       .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
 
     const list = $("list");
     list.replaceChildren();
     if (!shown.length) {
-      list.append(el("div", { class: "empty" }, monthExpenses.length ? "No expenses match your filters." : "No expenses for this month. Add one using the form."));
+      list.append(el("div", { class: "empty" }, monthExpenses.length ? "No expenses match your filters." : "No expenses recorded for this month."));
       return;
     }
+
+    const groupByClient = $("groupBy").value === "client";
     const groups = new Map();
     for (const e of shown) {
-      if (!groups.has(e.date)) groups.set(e.date, []);
-      groups.get(e.date).push(e);
+      const key = groupByClient ? e.clientId : e.date;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(e);
     }
-    for (const [date, items] of groups) {
-      const day = el("div", { class: "day" },
-        el("div", { class: "day-head" }, el("span", null, dayLabel(date)), el("span", null, money(sum(items))))
+    let entries = [...groups.entries()];
+    if (groupByClient) entries.sort((a, b) => sum(b[1]) - sum(a[1]));
+
+    for (const [key, items] of entries) {
+      const group = el("div", { class: "group" },
+        el("div", { class: "group-head" },
+          el("span", null, groupByClient ? clientName(key) : dayLabel(key)),
+          el("span", null, money(sum(items)))
+        )
       );
       for (const e of items) {
         const c = catInfo(e.category);
-        day.append(el("div", { class: "item" },
+        const meta = [
+          groupByClient ? dayLabel(e.date) : clientName(e.clientId),
+          e.category,
+          e.vendor,
+          e.method,
+          e.bill ? `Bill ${e.bill}` : null
+        ].filter(Boolean).join(" · ");
+        group.append(el("div", { class: "item" },
           el("div", { class: "dot", style: `background:${c.color}22` }, c.icon),
           el("div", null,
-            el("div", { class: "title" }, e.note || e.category),
-            el("div", { class: "meta" }, [e.note ? e.category : null, e.method].filter(Boolean).join(" · "))
+            el("div", { class: "title" }, e.note || e.vendor || e.category),
+            el("div", { class: "meta" }, meta)
           ),
           el("div", { class: "amount" }, money(e.amount)),
           el("div", { class: "actions" },
-            el("button", { class: "small", type: "button", "aria-label": "Edit", onclick: () => startEdit(e.id) }, "Edit"),
-            el("button", { class: "small danger", type: "button", "aria-label": "Delete", onclick: () => remove(e.id) }, "Delete")
+            el("button", { class: "small", type: "button", onclick: () => startEdit(e.id) }, "Edit"),
+            el("button", { class: "small danger", type: "button", onclick: () => removeExpense(e.id) }, "Delete")
           )
         ));
       }
-      list.append(day);
+      list.append(group);
     }
   }
-  const sum = arr => arr.reduce((s, e) => s + e.amount, 0);
 
-  // ---------- actions ----------
+  // ---------- expense actions ----------
   $("form").addEventListener("submit", ev => {
     ev.preventDefault();
+    const clientId = $("client").value;
+    if (!clientId || !clientById(clientId)) {
+      toast("Add a client first");
+      $("clientName").focus();
+      return;
+    }
     const amount = Math.round(parseFloat($("amount").value) * 100) / 100;
     const date = $("date").value;
     if (!(amount > 0) || !date) return;
-    const data = { amount, date, category: $("category").value, note: $("note").value.trim(), method: $("method").value };
+    const data = {
+      clientId, amount, date,
+      category: $("category").value,
+      vendor: $("vendor").value.trim(),
+      note: $("note").value.trim(),
+      method: $("method").value,
+      bill: $("bill").value.trim()
+    };
 
     if (editingId) {
       const e = state.expenses.find(x => x.id === editingId);
@@ -529,13 +759,12 @@
       stopEdit();
     } else {
       state.expenses.push({ id: uid(), createdAt: Date.now(), ...data });
-      toast(`Added ${money(amount)}`);
-      $("amount").value = "";
-      $("note").value = "";
+      toast(`Added ${money(amount)} for ${clientName(clientId)}`);
+      for (const id of ["amount", "vendor", "note", "bill"]) $(id).value = "";
       $("amount").focus();
     }
     save();
-    if (monthOf(date) !== $("month").value) $("month").value = monthOf(date);
+    if (monthOf(date) !== currentMonth()) $("month").value = monthOf(date);
     render();
   });
 
@@ -543,11 +772,15 @@
     const e = state.expenses.find(x => x.id === id);
     if (!e) return;
     editingId = id;
+    renderClientSelects();
+    $("client").value = e.clientId;
     $("amount").value = e.amount;
     $("date").value = e.date;
     $("category").value = catInfo(e.category).name;
+    $("vendor").value = e.vendor || "";
     $("note").value = e.note || "";
     $("method").value = e.method || "Other";
+    $("bill").value = e.bill || "";
     $("formTitle").textContent = "Edit expense";
     $("submitBtn").textContent = "Save changes";
     $("cancelEdit").hidden = false;
@@ -555,16 +788,19 @@
     $("amount").focus({ preventScroll: true });
   }
   function stopEdit() {
+    const keepClient = $("client").value;
     editingId = null;
     $("form").reset();
+    renderClientSelects();
+    if ([...$("client").options].some(o => o.value === keepClient)) $("client").value = keepClient;
     $("date").value = todayISO();
-    $("formTitle").textContent = "Add expense";
+    $("formTitle").textContent = "Record expense";
     $("submitBtn").textContent = "Add expense";
     $("cancelEdit").hidden = true;
   }
   $("cancelEdit").addEventListener("click", stopEdit);
 
-  function remove(id) {
+  function removeExpense(id) {
     const idx = state.expenses.findIndex(x => x.id === id);
     if (idx < 0) return;
     const [removed] = state.expenses.splice(idx, 1);
@@ -574,20 +810,112 @@
     toast("Expense deleted", () => { state.expenses.push(removed); save(); render(); });
   }
 
-  $("budgetForm").addEventListener("submit", ev => {
-    ev.preventDefault();
-    state.budget = Math.max(0, parseFloat($("budget").value) || 0);
+  // ---------- client actions ----------
+  function addClient(name, budget) {
+    name = name.trim();
+    if (!name) return null;
+    const existing = state.clients.find(c => c.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      toast(`"${existing.name}" already exists`);
+      return existing;
+    }
+    const c = { id: uid(), name, budget: Math.max(0, budget || 0), archived: false, createdAt: Date.now() };
+    state.clients.push(c);
     save();
+    return c;
+  }
+
+  $("clientForm").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const name = $("clientName").value.trim();
+    const budget = Math.max(0, parseFloat($("clientBudget").value) || 0);
+    if (!name) return;
+    if (editingClientId) {
+      const clash = state.clients.find(c => c.id !== editingClientId && c.name.toLowerCase() === name.toLowerCase());
+      if (clash) return toast(`"${clash.name}" already exists`);
+      const c = clientById(editingClientId);
+      if (c) { c.name = name; c.budget = budget; }
+      save();
+      toast("Client updated");
+      stopEditClient();
+    } else {
+      const c = addClient(name, budget);
+      $("clientForm").reset();
+      render();
+      if (c && !c.archived) $("client").value = c.id;
+      if (c) toast(`Client "${c.name}" ready`);
+      return;
+    }
     render();
-    toast(state.budget ? `Budget set to ${money(state.budget)}` : "Budget cleared");
   });
 
+  function startEditClient(id) {
+    const c = clientById(id);
+    if (!c) return;
+    editingClientId = id;
+    $("clientName").value = c.name;
+    $("clientBudget").value = c.budget || "";
+    $("clientFormLabel").textContent = "Client name";
+    $("clientSubmit").textContent = "Save client";
+    $("clientCancel").hidden = false;
+    $("clientName").focus();
+  }
+  function stopEditClient() {
+    editingClientId = null;
+    $("clientForm").reset();
+    $("clientFormLabel").textContent = "Add a client";
+    $("clientSubmit").textContent = "Add client";
+    $("clientCancel").hidden = true;
+  }
+  $("clientCancel").addEventListener("click", stopEditClient);
+
+  function toggleArchive(id) {
+    const c = clientById(id);
+    if (!c) return;
+    c.archived = !c.archived;
+    save();
+    render();
+    toast(c.archived ? `"${c.name}" archived — its expenses stay in your reports` : `"${c.name}" restored`);
+  }
+
+  function deleteClient(id) {
+    const c = clientById(id);
+    if (!c) return;
+    const theirs = state.expenses.filter(e => e.clientId === id);
+    const msg = theirs.length
+      ? `Delete "${c.name}" and their ${plural(theirs.length, "expense")} (${money(sum(theirs))})?\n\nTip: use Archive instead if the project is just finished — that keeps the records.`
+      : `Delete "${c.name}"?`;
+    if (!confirm(msg)) return;
+    const snapClients = state.clients.slice();
+    const snapExpenses = state.expenses.slice();
+    state.clients = state.clients.filter(x => x.id !== id);
+    state.expenses = state.expenses.filter(e => e.clientId !== id);
+    if (editingClientId === id) stopEditClient();
+    if (editingId && !state.expenses.some(e => e.id === editingId)) stopEdit();
+    save();
+    render();
+    toast(`"${c.name}" deleted`, () => { state.clients = snapClients; state.expenses = snapExpenses; save(); render(); });
+  }
+
+  $("quickClient").addEventListener("click", () => {
+    const name = prompt("New client / project name:");
+    if (!name || !name.trim()) return;
+    const c = addClient(name);
+    render();
+    if (c && !c.archived) $("client").value = c.id;
+    $("amount").focus();
+  });
+
+  $("toggleArchived").addEventListener("click", () => { showArchived = !showArchived; renderClients(); });
+
+  // ---------- controls ----------
   $("month").addEventListener("change", render);
-  $("prevMonth").addEventListener("click", () => { $("month").value = shiftMonth($("month").value || monthOf(todayISO()), -1); render(); });
-  $("nextMonth").addEventListener("click", () => { $("month").value = shiftMonth($("month").value || monthOf(todayISO()), 1); render(); });
+  $("prevMonth").addEventListener("click", () => { $("month").value = shiftMonth(currentMonth(), -1); render(); });
+  $("nextMonth").addEventListener("click", () => { $("month").value = shiftMonth(currentMonth(), 1); render(); });
   $("search").addEventListener("input", render);
-  $("filterCat").addEventListener("change", render);
+  for (const id of ["filterCat", "filterClient", "groupBy"]) $(id).addEventListener("change", render);
   $("currency").addEventListener("change", () => { state.currency = $("currency").value; save(); render(); });
+  $("printBtn").addEventListener("click", () => window.print());
 
   function applyTheme() {
     if (state.theme) document.documentElement.setAttribute("data-theme", state.theme);
@@ -605,19 +933,42 @@
     const s = String(v ?? "");
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  $("exportBtn").addEventListener("click", () => {
-    if (!state.expenses.length) return toast("Nothing to export yet");
-    const rows = [["date", "amount", "category", "note", "method"]];
-    for (const e of [...state.expenses].sort((a, b) => a.date.localeCompare(b.date))) rows.push([e.date, e.amount, e.category, e.note, e.method]);
-    const blob = new Blob([rows.map(r => r.map(csvCell).join(",")).join("\n")], { type: "text/csv" });
-    const a = el("a", { href: URL.createObjectURL(blob), download: `expenses-${todayISO()}.csv` });
+  function download(filename, rows) {
+    // BOM so Excel opens ₹ and other symbols correctly
+    const blob = new Blob(["﻿" + rows.map(r => r.map(csvCell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = el("a", { href: URL.createObjectURL(blob), download: filename });
     document.body.append(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  $("exportBtn").addEventListener("click", () => {
+    if (!state.expenses.length) return toast("Nothing to export yet");
+    const rows = [["date", "client", "amount", "category", "vendor", "description", "method", "bill"]];
+    for (const e of [...state.expenses].sort((a, b) => a.date.localeCompare(b.date))) {
+      rows.push([e.date, clientName(e.clientId), e.amount, e.category, e.vendor, e.note, e.method, e.bill]);
+    }
+    download(`client-expenses-${todayISO()}.csv`, rows);
+  });
+
+  $("exportMonthBtn").addEventListener("click", () => {
+    const ym = currentMonth();
+    const monthExpenses = state.expenses.filter(e => monthOf(e.date) === ym);
+    if (!monthExpenses.length) return toast("Nothing recorded this month");
+    const usedCats = CATEGORIES.map(c => c.name).filter(n => monthExpenses.some(e => e.category === n));
+    const rows = [["client", ...usedCats, "total"]];
+    const ids = [...new Set(monthExpenses.map(e => e.clientId))].sort((a, b) => clientName(a).localeCompare(clientName(b)));
+    for (const id of ids) {
+      const mine = monthExpenses.filter(e => e.clientId === id);
+      rows.push([clientName(id), ...usedCats.map(n => sum(mine.filter(e => e.category === n)) || ""), sum(mine)]);
+    }
+    rows.push(["TOTAL", ...usedCats.map(n => sum(monthExpenses.filter(e => e.category === n))), sum(monthExpenses)]);
+    download(`client-summary-${ym}.csv`, rows);
   });
 
   function parseCSV(text) {
+    text = text.replace(/^﻿/, "");
     const rows = [];
     let row = [], cell = "", inQuotes = false;
     for (let i = 0; i < text.length; i++) {
@@ -646,36 +997,44 @@
     if (!rows.length) return toast("That file is empty");
     const header = rows[0].map(h => h.trim().toLowerCase());
     const col = name => header.indexOf(name);
-    if (col("date") < 0 || col("amount") < 0) return toast("CSV needs at least 'date' and 'amount' columns");
+    if (col("date") < 0 || col("amount") < 0 || col("client") < 0) return toast("CSV needs 'date', 'client' and 'amount' columns");
 
-    const existing = new Set(state.expenses.map(e => `${e.date}|${e.amount}|${e.category}|${e.note}`));
+    const key = e => `${e.date}|${e.clientId}|${e.amount}|${e.category}|${e.note}|${e.vendor}`;
+    const existing = new Set(state.expenses.map(key));
     let added = 0, skipped = 0;
     for (const r of rows.slice(1)) {
       const get = name => (col(name) >= 0 ? (r[col(name)] || "").trim() : "");
       const amount = Math.round(parseFloat(get("amount").replace(/[^\d.\-]/g, "")) * 100) / 100;
       const date = get("date");
-      if (!(amount > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { skipped++; continue; }
-      const e = { id: uid(), createdAt: Date.now(), date, amount, category: catInfo(get("category")).name, note: get("note"), method: get("method") || "Other" };
-      const key = `${e.date}|${e.amount}|${e.category}|${e.note}`;
-      if (existing.has(key)) { skipped++; continue; }
-      existing.add(key);
+      const name = get("client");
+      if (!(amount > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !name) { skipped++; continue; }
+      const client = state.clients.find(c => c.name.toLowerCase() === name.toLowerCase()) || addClient(name);
+      const e = {
+        id: uid(), createdAt: Date.now(), clientId: client.id, date, amount,
+        category: catInfo(get("category")).name, vendor: get("vendor"),
+        note: get("description") || get("note"), method: get("method") || "Other", bill: get("bill")
+      };
+      if (existing.has(key(e))) { skipped++; continue; }
+      existing.add(key(e));
       state.expenses.push(e);
       added++;
     }
     save();
     render();
-    toast(`Imported ${added} expense${added === 1 ? "" : "s"}${skipped ? `, skipped ${skipped}` : ""}`);
+    toast(`Imported ${plural(added, "expense")}${skipped ? `, skipped ${skipped}` : ""}`);
   });
 
   $("clearBtn").addEventListener("click", () => {
-    if (!state.expenses.length) return;
-    if (!confirm(`Delete all ${state.expenses.length} expenses? This can be undone for a few seconds.`)) return;
-    undoSnapshot = state.expenses;
+    if (!state.clients.length && !state.expenses.length) return;
+    if (!confirm(`Delete all ${plural(state.clients.length, "client")} and ${plural(state.expenses.length, "expense")}?`)) return;
+    const snap = { clients: state.clients, expenses: state.expenses };
+    state.clients = [];
     state.expenses = [];
     stopEdit();
+    stopEditClient();
     save();
     render();
-    toast("All expenses deleted", () => { state.expenses = undoSnapshot; save(); render(); });
+    toast("Everything deleted", () => { state.clients = snap.clients; state.expenses = snap.expenses; save(); render(); });
   });
 
   render();
