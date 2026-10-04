@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VG Constructions Expenses</title>
 <meta name="description" content="VG Constructions – record project bills and client payments for each interior design client. Data stays in this browser.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#374255">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='212.2 221.8 142.7 151.0'%3E%3Cpath fill='%23374255' d='M 214.16 297.57 L 214.16 318.39 L 283.51 370.76 L 352.86 318.39 L 352.86 297.57 L 283.51 349.94 Z M 214.16 297.57'/%3E%3Cpath fill='%23B5414D' d='M 338.5 265.33 L 329.92 258.84 L 309.95 243.37 L 309.69 243.57 L 297.93 252.45 L 295.3 254.43 L 295.26 254.46 L 289.46 258.84 L 280.88 265.33 L 278.45 267.16 L 269.38 274.02 L 283.76 284.88 L 292.83 278.03 L 295.26 276.2 L 297.93 274.18 L 309.64 265.33 L 324.04 276.2 L 309.65 287.06 L 307.23 288.9 L 298.15 295.75 L 297.93 295.91 L 283.77 306.61 L 283.51 306.81 L 283.5 306.8 L 254.73 285.07 L 242.94 276.17 L 265.88 258.84 L 283.51 245.52 L 283.55 245.55 L 297.93 234.69 L 283.51 223.79 L 269.09 234.69 L 228.26 265.52 L 214.16 276.17 L 228.26 286.81 L 239.87 295.58 L 269.11 317.67 L 269.15 317.7 L 283.51 328.54 L 283.77 328.34 L 297.93 317.64 L 298.16 317.48 L 352.86 276.17 Z M 338.5 265.33'/%3E%3Cpath fill='%23E9E8E9' d='M 295.26 254.46 L 295.3 254.43 L 297.93 252.45 L 297.93 234.69 L 283.55 245.55 L 283.51 245.52 L 265.88 258.84 L 242.94 276.17 L 254.73 285.07 L 269.38 296.14 L 269.38 274.02 L 278.45 267.16 L 280.88 265.33 L 289.46 258.84 Z M 295.26 254.46'/%3E%3Cpath fill='%23E9E8E9' d='M 297.93 274.18 L 295.26 276.2 L 292.84 278.03 L 283.76 284.88 L 283.74 284.87 L 283.74 306.64 L 283.77 306.61 L 297.93 295.92 L 298.15 295.75 L 307.23 288.9 L 309.65 287.07 L 309.65 265.33 Z M 297.93 274.18'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -423,6 +426,7 @@
       </div>
     </div>
       <div class="top-controls">
+        <button id="installBtn" type="button" hidden>⬇ Install app</button>
         <button id="printBtn" type="button">Print</button>
         <button id="themeBtn" aria-label="Toggle theme">◐</button>
       </div>
@@ -684,11 +688,12 @@
         <div class="tools">
           <button id="exportBtn" type="button">Export all (CSV)</button>
           <button id="exportMonthBtn" type="button">Period summary (CSV)</button>
-          <button id="importBtn" type="button">Import CSV</button>
+          <button id="backupBtn" type="button">Full backup</button>
+          <button id="importBtn" type="button">Import / restore</button>
           <button id="clearBtn" type="button" class="danger">Delete all</button>
-          <input id="importFile" type="file" accept=".csv,text/csv" hidden>
+          <input id="importFile" type="file" accept=".csv,text/csv,.json,application/json" hidden>
         </div>
-        <p class="note">Everything is saved only in this browser. Export a CSV regularly as a backup.</p>
+        <p class="note">Everything is saved in this browser on this device. Use "Full backup" every week and keep the file safe; "Import / restore" brings it back.</p>
       </div>
     </div>
 
@@ -2303,11 +2308,57 @@
     return doc;
   }
 
+  // ---------- full backup (everything, including budgets and your own items) ----------
+  $("backupBtn").addEventListener("click", () => {
+    const data = { app: "vg-expenses", version: 1, exportedAt: new Date().toISOString(),
+      clients: state.clients, expenses: state.expenses, payments: state.payments, customItems: state.customItems };
+    saveFile(`VG Expenses backup ${todayISO()}.json`, JSON.stringify(data, null, 1), "application/json");
+  });
+  // Restoring adds anything this browser doesn't have yet; nothing already here is changed or removed.
+  function restoreBackup(text) {
+    let data;
+    try { data = JSON.parse(text); } catch (e) { return toast("That backup file couldn't be read."); }
+    if (!data || data.app !== "vg-expenses") return toast("That isn't a VG Expenses backup file.");
+    let added = 0;
+    const mergeIn = (key, list, norm) => {
+      const have = new Set(state[key].map(x => x.id));
+      for (const raw of Array.isArray(list) ? list : []) {
+        const x = norm(raw);
+        if (x && !have.has(x.id)) { state[key].push(x); have.add(x.id); added++; }
+      }
+    };
+    mergeIn("clients", data.clients, c => (c && typeof c.id === "string" && c.name ? { id: c.id, name: String(c.name), budget: Math.max(0, Number(c.budget) || 0), archived: !!c.archived, createdAt: c.createdAt || 0 } : null));
+    mergeIn("expenses", data.expenses, normalizeExpense);
+    mergeIn("payments", data.payments, normalizePayment);
+    mergeIn("customItems", data.customItems, i => (i && typeof i.name === "string" && i.name.trim() && !state.customItems.some(c => c.name.toLowerCase() === i.name.trim().toLowerCase()) ? { id: i.id || uid(), name: i.name.trim(), category: catInfo(i.category).name } : null));
+    save();
+    rebuildItemList();
+    renderMyItems();
+    render();
+    toast(added ? `Restored ${plural(added, "record")} from the backup` : "Everything in that backup is already here");
+  }
+
+  // ---------- install as an app (when opened from the web address) ----------
+  let installPrompt = null;
+  window.addEventListener("beforeinstallprompt", ev => { ev.preventDefault(); installPrompt = ev; $("installBtn").hidden = false; });
+  window.addEventListener("appinstalled", () => { installPrompt = null; $("installBtn").hidden = true; toast("Installed. Open VG Expenses from your desktop or Start menu."); });
+  $("installBtn").addEventListener("click", async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    try { await installPrompt.userChoice; } catch (e) { /* closed */ }
+    installPrompt = null;
+    $("installBtn").hidden = true;
+  });
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register("sw.js").catch(() => { /* works without offline support */ });
+  }
+
   $("importBtn").addEventListener("click", () => $("importFile").click());
   $("importFile").addEventListener("change", async () => {
     const file = $("importFile").files[0];
     $("importFile").value = "";
     if (!file) return;
+    if (/\.json$/i.test(file.name) || file.type === "application/json") return restoreBackup(await file.text());
     const rows = parseCSV(await file.text());
     if (!rows.length) return toast("That file is empty");
     const header = rows[0].map(h => h.trim().toLowerCase());

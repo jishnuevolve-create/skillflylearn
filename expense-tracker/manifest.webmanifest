@@ -1,0 +1,14 @@
+{
+  "name": "VG Constructions Expenses",
+  "short_name": "VG Expenses",
+  "description": "Daily project bills and client payments for VG Constructions.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F2F3F7",
+  "theme_color": "#374255",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
