@@ -174,6 +174,11 @@
   .client-item .btns { display: flex; gap: 4px; margin-top: 6px; }
   .badge { font-size: .7rem; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--muted); margin-left: 6px; font-weight: 500; }
 
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); font-size: .85rem; }
+  .chip button { border: 0; background: none; padding: 2px 6px; border-radius: 999px; color: var(--muted); font-size: .75rem; }
+  .chip button:hover { background: var(--surface-2); color: var(--danger); }
+
   .list-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .list-head h2 { margin: 0; }
   .filters { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -229,8 +234,9 @@
     #summaryCard { order: 2; }
     #listCard { order: 3; }
     #clientsCard { order: 4; }
-    #catCard { order: 5; }
-    #dataCard { order: 6; }
+    #itemsCard { order: 5; }
+    #catCard { order: 6; }
+    #dataCard { order: 7; }
     .stats { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 480px) {
@@ -248,7 +254,7 @@
       --bg: #fff; --surface: #fff; --surface-2: #eee; --text: #000; --muted: #444; --border: #ccc; --primary: #2A1FA8; --shadow: none;
     }
     .wrap { max-width: none; padding: 0; }
-    .no-print, #entryCard, #clientsCard, #dataCard, .top-controls, .item .actions, .filters, .toast { display: none !important; }
+    .no-print, #entryCard, #clientsCard, #itemsCard, #dataCard, .top-controls, .item .actions, .filters, .toast { display: none !important; }
     .print-only { display: block; }
     .grid { grid-template-columns: 1fr; }
     .side, .main { display: contents; }
@@ -458,6 +464,26 @@
         <button type="button" class="link" id="toggleArchived" hidden></button>
       </div>
 
+      <div class="card" id="itemsCard">
+        <h2>My items</h2>
+        <form id="itemForm" autocomplete="off">
+          <div class="field">
+            <label for="newItemName">Add a material or item</label>
+            <input id="newItemName" type="text" maxlength="60" required placeholder="e.g. 18mm Century BWP ply">
+          </div>
+          <div class="field">
+            <label for="newItemCat">Category</label>
+            <div class="inline">
+              <select id="newItemCat"></select>
+              <button type="submit" class="primary">Add</button>
+            </div>
+          </div>
+        </form>
+        <p class="note" id="itemsInfo" style="margin-top:0"></p>
+        <input id="itemFilter" type="search" placeholder="Search your items" aria-label="Search your items" style="margin-bottom:10px">
+        <div class="chips" id="myItems"></div>
+      </div>
+
       <div class="card" id="dataCard">
         <h2>Data</h2>
         <div class="tools">
@@ -529,7 +555,11 @@
 
   const STORE_KEY = "client-expenses.v1";
   const CATEGORIES = [
-    { name: "Materials", icon: "🪵", color: "#B07A3F", items: ["Plywood", "MDF board", "HDHMR board", "Particle board", "Block board", "Laminate", "Veneer", "Acrylic sheet", "Glass", "Mirror", "Tiles", "Marble", "Granite", "Quartz countertop", "Wooden flooring", "Vinyl flooring", "Gypsum board", "False ceiling material", "Wallpaper", "Wall panels", "Adhesive", "Edge banding", "Cement & sand"] },
+    { name: "Materials", icon: "🪵", color: "#B07A3F", items: ["Plywood", "MDF board", "HDHMR board", "Particle board", "Block board", "Laminate", "Veneer", "Acrylic sheet", "Glass", "Mirror", "Tiles", "Marble", "Granite", "Quartz countertop", "Wooden flooring", "Vinyl flooring", "Gypsum board", "False ceiling material", "Wallpaper", "Wall panels", "Adhesive", "Edge banding", "Cement & sand",
+      "Marine plywood", "Flexi plywood", "WPC board", "PVC board", "Acrylic laminate", "Kitchen laminate", "Louvers", "Fluted panel", "Charcoal panel",
+      "PVC panel", "Stone cladding", "Wall cladding", "Solid surface (Corian)", "Toughened glass", "Lacquered glass", "Frosted film", "Glass partition",
+      "Aluminium profile", "Aluminium sections", "MS steel", "SS sheet", "Teak wood", "Sal wood", "Rubber wood", "Wooden beading", "Skirting",
+      "Carpet tiles", "Artificial grass", "Tile adhesive", "Grout", "Waterproofing", "POP", "Gypsum powder", "Silicone sealant", "Bricks", "Cement", "Sand"] },
     { name: "Furniture", icon: "🛋️", color: "#7A4FD8", items: ["Sofa", "Bed", "Mattress", "Dining table", "Chairs", "Wardrobe", "Modular kitchen", "TV unit", "Study table", "Shoe rack", "Side table", "Coffee table", "Office workstation", "Custom furniture"] },
     { name: "Lighting & Electrical", icon: "💡", color: "#D8A12A", items: ["Ceiling lights", "Pendant lights", "Chandelier", "Wall lights", "LED strip", "Profile lights", "Spot lights", "Switches & sockets", "Wiring & cables", "Ceiling fan", "DB & MCB"] },
     { name: "Fabric & Upholstery", icon: "🧵", color: "#D8457A", items: ["Curtains", "Blinds", "Curtain rods & tracks", "Upholstery fabric", "Cushions", "Rugs & carpets", "Foam", "Headboard upholstery"] },
@@ -546,8 +576,9 @@
   ];
   const catByName = Object.fromEntries(CATEGORIES.map(c => [c.name, c]));
   const catInfo = name => catByName[name] || catByName.Other;
-  const itemCategory = {};
-  for (const c of CATEGORIES) for (const it of c.items) itemCategory[it.toLowerCase()] = c.name;
+  const builtInCategory = {};
+  for (const c of CATEGORIES) for (const it of c.items) builtInCategory[it.toLowerCase()] = c.name;
+  let itemCategory = { ...builtInCategory };   // rebuilt with the user's own items in rebuildItemList()
 
   // ---------- state ----------
   const DEFAULT_CLIENTS = ["Soman Adva", "Arun", "Vyshnavi"];
@@ -589,7 +620,7 @@
   }
 
   function load() {
-    let loaded = { clients: [], expenses: [], payments: [], theme: "", seeded: false };
+    let loaded = { clients: [], expenses: [], payments: [], customItems: [], theme: "", seeded: false };
     try {
       const raw = localStorage.getItem(STORE_KEY);
       if (raw) {
@@ -601,6 +632,9 @@
           expenses: (Array.isArray(data.expenses) ? data.expenses : []).map(normalizeExpense).filter(e => e && ids.has(e.clientId)),
           payments: (Array.isArray(data.payments) ? data.payments : []).map(normalizePayment).filter(p => p && ids.has(p.clientId)),
           theme: data.theme || "",
+          customItems: (Array.isArray(data.customItems) ? data.customItems : [])
+            .filter(i => i && typeof i.name === "string" && i.name.trim())
+            .map(i => ({ name: i.name.trim(), category: catInfo(i.category).name })),
           seeded: !!data.seeded
         };
       }
@@ -766,7 +800,8 @@
   }
 
   // ---------- setup ----------
-  for (const c of CATEGORIES) for (const it of c.items) $("itemList").append(el("option", { value: it }, c.name));
+  rebuildItemList();
+  for (const c of CATEGORIES) $("newItemCat").append(el("option", { value: c.name }, `${c.icon} ${c.name}`));
   for (const c of CATEGORIES) $("category").append(el("option", { value: c.name }, `${c.icon} ${c.name}`));
   $("category").addEventListener("change", () => { categoryTouched = true; });
   $("filterCat").append(el("option", { value: "" }, "All categories"));
@@ -1092,14 +1127,16 @@
       note: $("note").value.trim()
     };
 
+    const learned = rememberItems(lines, data.category);
+
     if (editingId) {
       const e = state.expenses.find(x => x.id === editingId);
       if (e) Object.assign(e, data);
-      toast("Expense updated");
+      toast("Expense updated" + (learned ? ` · ${plural(learned, "new item")} added to your list` : ""));
       stopEdit();
     } else {
       state.expenses.push({ id: uid(), createdAt: Date.now(), ...data });
-      toast(`Added ${money(data.amount)} for ${clientName(clientId)}`);
+      toast(`Added ${money(data.amount)} for ${clientName(clientId)}` + (learned ? ` · ${plural(learned, "new item")} added to your list` : ""));
       for (const id of ["vendor", "bill", "note", "amount"]) $(id).value = "";
       resetLines();
       categoryTouched = false;
@@ -1229,6 +1266,82 @@
     render();
     toast("Payment deleted", () => { state.payments.push(removed); save(); render(); });
   }
+
+  // ---------- my items (custom item list) ----------
+  function rebuildItemList() {
+    itemCategory = { ...builtInCategory };
+    for (const i of state.customItems) itemCategory[i.name.toLowerCase()] = i.category;
+    const list = $("itemList");
+    list.replaceChildren();
+    for (const i of [...state.customItems].sort((a, b) => a.name.localeCompare(b.name))) list.append(el("option", { value: i.name }, i.category));
+    for (const c of CATEGORIES) for (const it of c.items) {
+      if (!state.customItems.some(i => i.name.toLowerCase() === it.toLowerCase())) list.append(el("option", { value: it }, c.name));
+    }
+  }
+  function addCustomItem(name, category) {
+    name = name.trim();
+    if (!name || itemCategory[name.toLowerCase()]) return false;
+    state.customItems.push({ name, category: catInfo(category).name });
+    return true;
+  }
+  // Items typed on a bill that aren't in the list yet are remembered under the bill's category.
+  function rememberItems(lines, category) {
+    let n = 0;
+    for (const l of lines) if (l.item && addCustomItem(l.item, category)) n++;
+    if (n) { rebuildItemList(); renderMyItems(); }
+    return n;
+  }
+  function renderMyItems() {
+    const box = $("myItems");
+    box.replaceChildren();
+    const builtIn = Object.keys(builtInCategory).length;
+    $("itemsInfo").textContent = `${builtIn} ready-made items + ${plural(state.customItems.length, "item")} of your own.`;
+    const q = $("itemFilter").value.trim().toLowerCase();
+    const mine = [...state.customItems].filter(i => !q || i.name.toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+    if (!state.customItems.length) {
+      box.append(el("div", { class: "note", style: "margin:0" }, "No items of your own yet. Add one above, or just type a new item on a bill — it's remembered automatically."));
+      return;
+    }
+    if (!mine.length) box.append(el("div", { class: "note", style: "margin:0" }, "No matching items."));
+    for (const i of mine) {
+      const c = catInfo(i.category);
+      box.append(el("span", { class: "chip", title: i.category },
+        `${c.icon} ${i.name}`,
+        el("button", { type: "button", "aria-label": `Remove ${i.name}`, title: "Remove from list", onclick: () => removeCustomItem(i.name) }, "✕")
+      ));
+    }
+  }
+  function removeCustomItem(name) {
+    const idx = state.customItems.findIndex(i => i.name === name);
+    if (idx < 0) return;
+    const [removed] = state.customItems.splice(idx, 1);
+    save();
+    rebuildItemList();
+    renderMyItems();
+    toast(`"${removed.name}" removed from the list`, () => { state.customItems.push(removed); save(); rebuildItemList(); renderMyItems(); });
+  }
+  $("itemForm").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const name = $("newItemName").value.trim();
+    if (!name) return;
+    if (itemCategory[name.toLowerCase()]) {
+      toast(`"${name}" is already in the list`);
+      return;
+    }
+    addCustomItem(name, $("newItemCat").value);
+    save();
+    rebuildItemList();
+    $("itemFilter").value = "";
+    renderMyItems();
+    $("newItemName").value = "";
+    $("newItemName").focus();
+    toast(`"${name}" added — pick it from the Items box on any bill`);
+  });
+  $("newItemName").addEventListener("input", () => {
+    const c = builtInCategory[$("newItemName").value.trim().toLowerCase()];
+    if (c) $("newItemCat").value = c;
+  });
+  $("itemFilter").addEventListener("input", renderMyItems);
 
   // ---------- client actions ----------
   function addClient(name, budget) {
@@ -1512,6 +1625,7 @@
   });
 
   save();
+  renderMyItems();
   render();
 })();
 </script>
