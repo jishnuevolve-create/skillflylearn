@@ -2147,6 +2147,8 @@
         c.amount += e.amount; c.bills++;
       }
       const cats = Object.entries(byCat).sort((a, b) => b[1].amount - a[1].amount);
+      // keep the small category table on one page
+      if (y + (cats.length + 2) * 7.5 + 8 > 278) { doc.addPage(); y = 20; }
       y = heading("Spend by category", y);
       doc.autoTable({ ...tableStyle, startY: y,
         head: [["Category", "Bills", "Amount", "Share"]],
@@ -2155,6 +2157,53 @@
         columnStyles: { 1: { halign: "right", cellWidth: 20 }, 2: { halign: "right", cellWidth: 40 }, 3: { halign: "right", cellWidth: 22 } },
         didParseCell: d => { if (d.column.index > 0) d.cell.styles.halign = "right"; } });
       return doc.lastAutoTable.finalY + 9;
+    }
+
+    const LABOUR = "Labour & Contractors";
+    // Days on a labour bill: the number written as "4 days" in an item's quantity; otherwise one day.
+    function labourDays(e) {
+      let d = 0;
+      for (const l of e.lines) {
+        const m = String(l.qty || "").match(/(\d+(?:\.\d+)?)\s*(?:days?|d)\b/i);
+        if (m) d = Math.max(d, Number(m[1]));
+      }
+      return d || 1;
+    }
+    const fmtNum = n => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+    function labourSection(labour, y) {
+      const total = sum(labour);
+      const dates = [...new Set(labour.map(e => e.date))].sort();
+      const groups = new Map();
+      for (const e of labour) {
+        const who = e.vendor || "Labour (no name)";
+        const g = groups.get(who) || { work: new Set(), days: 0, amount: 0 };
+        e.lines.forEach(l => { if (l.item) g.work.add(l.item); });
+        g.days += labourDays(e);
+        g.amount += e.amount;
+        groups.set(who, g);
+      }
+      const rows = [...groups.entries()].sort((a, b) => b[1].amount - a[1].amount);
+      const totalDays = rows.reduce((n, [, g]) => n + g.days, 0);
+      y = heading("Labour for the period", y);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...GREY);
+      doc.text(`Total labour cost ${pdfMoney(total)} · ${fmtNum(totalDays)} labour days · work on ${plural(dates.length, "different day")}`, M, y + 2);
+      y += 5;
+      doc.autoTable({ ...tableStyle, startY: y,
+        head: [["Worker / contractor", "Work", "Days worked", "Amount"]],
+        body: rows.map(([who, g]) => [pdfSafe(who), pdfSafe([...g.work].join(", ") || "-"), fmtNum(g.days), pdfMoney(g.amount)]),
+        foot: [["Total labour", "", fmtNum(totalDays), pdfMoney(total)]],
+        columnStyles: { 0: { cellWidth: 48 }, 2: { halign: "right", cellWidth: 26 }, 3: { halign: "right", cellWidth: 32 } },
+        didParseCell: d => { if (d.column.index >= 2) d.cell.styles.halign = "right"; } });
+      y = doc.lastAutoTable.finalY + 5;
+      const dayLine = doc.splitTextToSize("Labour dates: " + dates.map(fmtDayShort).join(", "), W - 2 * M);
+      const note = doc.splitTextToSize('Days worked counts the days written on each labour bill (for example "4 days"); a bill with no day count counts as one day.', W - 2 * M);
+      if (y + (dayLine.length + note.length) * 4 > 278) { doc.addPage(); y = 20; }
+      doc.setFontSize(8.5); doc.setTextColor(...GREY);
+      doc.text(dayLine, M, y + 2);
+      y += dayLine.length * 4 + 2;
+      doc.setFontSize(7.5);
+      doc.text(note, M, y + 1);
+      return y + note.length * 3.5 + 8;
     }
 
     if (!single) {
@@ -2200,11 +2249,41 @@
       doc.setFontSize(8.5); doc.setTextColor(...GREY);
       doc.text(doc.splitTextToSize(proj, W - 2 * M), M, y); y += 10;
 
-      if (!exp.length) {
-        doc.setFontSize(10); doc.text("No bills in this period.", M, y);
+      if (!pay.length && !exp.length) {
+        doc.setFontSize(10); doc.text("No bills or payments in this period.", M, y);
         return;
       }
-      categoryTable(exp, y);
+      if (pay.length) {
+        y = heading("Payments received", y);
+        doc.autoTable({ ...tableStyle, startY: y,
+          head: [["Date", "Details", "Received via", "Amount"]],
+          body: pay.map(p => [fmtDay(p.date), pdfSafe([p.note || "Payment", p.ref ? "Ref " + p.ref : ""].filter(Boolean).join(" · ")), p.method, pdfMoney(p.amount)]),
+          foot: [["", "", "Total received", pdfMoney(rec)]],
+          columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 32 }, 3: { halign: "right", cellWidth: 32 } },
+          didParseCell: d => { if (d.column.index === 3) d.cell.styles.halign = "right"; } });
+        y = doc.lastAutoTable.finalY + 9;
+      }
+      // Labour gets its own section; every other bill is listed date by date.
+      const labour = exp.filter(e => e.category === LABOUR);
+      const other = exp.filter(e => e.category !== LABOUR);
+      if (other.length) {
+        y = heading(labour.length ? "Bills & expenses (other than labour)" : "Bills & expenses", y);
+        doc.autoTable({ ...tableStyle, startY: y,
+          head: [["Date", "Vendor / bill", "Items", "Category", "Amount"]],
+          body: other.map(e => [
+            fmtDay(e.date),
+            pdfSafe([e.vendor || "-", e.bill ? "Bill " + e.bill : "", e.note].filter(Boolean).join("\n")),
+            pdfSafe(e.lines.map(lineLabel).filter(Boolean).join(", ") || "-"),
+            e.category,
+            pdfMoney(e.amount)
+          ]),
+          foot: [["", "", "", labour.length ? "Total (excl. labour)" : "Total spent", pdfMoney(sum(other))]],
+          columnStyles: { 0: { cellWidth: 24 }, 1: { cellWidth: 40 }, 3: { cellWidth: 32 }, 4: { halign: "right", cellWidth: 28 } },
+          didParseCell: d => { if (d.column.index === 4) d.cell.styles.halign = "right"; } });
+        y = doc.lastAutoTable.finalY + 9;
+      }
+      if (labour.length) y = labourSection(labour, y);
+      if (new Set(exp.map(e => e.category)).size > 1) categoryTable(exp, y);
     });
 
     const pages = doc.getNumberOfPages();
