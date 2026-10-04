@@ -1,0 +1,35 @@
+VG CONSTRUCTIONS - EXPENSE APP (PC VERSION)
+===========================================
+
+WHAT'S IN THIS FOLDER
+  VG Expenses.html       The app itself
+  Open VG Expenses.bat   Double-click to open the app in its own window
+  lib\                   The PDF tool (lets "Download PDF" work without internet)
+  How to use.txt         This file
+
+SET IT UP (one time)
+  1. Move this whole "VG Expenses" folder to where it will stay,
+     for example  C:\VG Expenses  or  Documents\VG Expenses.
+     Do this BEFORE you start entering expenses, and don't move it afterwards.
+  2. Open the folder and double-click "Open VG Expenses.bat".
+     The app opens in its own window (Microsoft Edge).
+     If Windows shows a blue "Windows protected your PC" box, click
+     "More info", then "Run anyway". This only happens the first time.
+  3. Optional desktop shortcut: right-click "Open VG Expenses.bat",
+     choose "Show more options" > "Send to" > "Desktop (create shortcut)".
+
+EVERY DAY
+  Always open the app the same way (the .bat file or its desktop shortcut).
+  Your records are saved inside the browser on this PC. If you open the
+  .html file in a different browser, it starts empty.
+
+BACKUP (please do this every week)
+  In the app, go to Data > "Export all (CSV)" and keep the file somewhere safe
+  (a pen drive, Google Drive or email it to yourself).
+  To restore on a new PC: set up this folder, open the app, and use
+  Data > "Import CSV".
+
+GOOD TO KNOW
+  - Works without internet, including the PDF download.
+  - Bill photo reading (Claude) is only in the online version on claude.ai.
+  - Do not delete the "lib" folder; the PDF download needs it.

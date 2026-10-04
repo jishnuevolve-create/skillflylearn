@@ -2016,21 +2016,27 @@
 
 
   // ---------- client statement PDF ----------
+  // The PDF tool is read from the "lib" folder next to this file when it's there (works offline),
+  // otherwise from the internet.
   const PDF_LIBS = [
-    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
-    "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
+    ["lib/jspdf.umd.min.js", "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"],
+    ["lib/jspdf.plugin.autotable.min.js", "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"]
   ];
   let pdfLibs = null;
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => { s.remove(); reject(new Error("Could not load " + src)); };
+      document.head.append(s);
+    });
+  }
   function loadPdfLibs() {
     if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve();
     if (!pdfLibs) {
-      pdfLibs = PDF_LIBS.reduce((chain, src) => chain.then(() => new Promise((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = src;
-        s.onload = resolve;
-        s.onerror = () => reject(new Error("Could not load " + src));
-        document.head.append(s);
-      })), Promise.resolve()).catch(err => { pdfLibs = null; throw err; });
+      pdfLibs = PDF_LIBS.reduce((chain, [local, cdn]) => chain.then(() => loadScript(local).catch(() => loadScript(cdn))), Promise.resolve())
+        .catch(err => { pdfLibs = null; throw err; });
     }
     return pdfLibs;
   }
