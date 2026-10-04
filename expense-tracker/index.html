@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Client Expenses</title>
-<meta name="description" content="Record project expenses for each interior design client and see monthly spend per client. Data stays in this browser.">
+<meta name="description" content="Record project expenses and client payments for each interior design client, and see monthly spend, income and balance per client. Data stays in this browser.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
@@ -21,6 +21,7 @@
     --accent: #FF7A2F;
     --danger: #C62828;
     --ok: #1B7F4B;
+    --ok-bg: #E3F4EA;
     --shadow: 0 1px 2px rgba(20, 24, 60, .06), 0 4px 16px rgba(20, 24, 60, .06);
   }
   @media (prefers-color-scheme: dark) {
@@ -36,6 +37,7 @@
       --accent: #FF9A5C;
       --danger: #FF6B6B;
       --ok: #4CD38A;
+      --ok-bg: #173A2A;
       --shadow: none;
     }
   }
@@ -51,6 +53,7 @@
     --accent: #FF9A5C;
     --danger: #FF6B6B;
     --ok: #4CD38A;
+    --ok-bg: #173A2A;
     --shadow: none;
   }
 
@@ -65,7 +68,7 @@
   h1, h2 { font-family: "Poppins", system-ui, sans-serif; margin: 0; }
   h1 { font-size: 1.5rem; }
   h2 { font-size: 1.05rem; margin-bottom: 12px; }
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 24px 16px 48px; }
 
   header.top {
     display: flex; flex-wrap: wrap; gap: 12px;
@@ -87,15 +90,15 @@
   .stat .label { color: var(--muted); font-size: .85rem; }
   .stat .value { font-family: "Poppins", sans-serif; font-size: 1.35rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   .stat .sub { color: var(--muted); font-size: .8rem; margin-top: 4px; }
-  .over { color: var(--danger); }
-  .under { color: var(--ok); }
+  .neg { color: var(--danger); }
+  .pos { color: var(--ok); }
 
   .meter { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 6px; }
   .meter > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
   .meter.is-over > span { background: var(--danger); }
 
-  .grid { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
-  .side, .main { display: grid; gap: 16px; }
+  .grid { display: grid; grid-template-columns: 380px 1fr; gap: 16px; align-items: start; }
+  .side, .main { display: grid; gap: 16px; min-width: 0; }
 
   label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
   .field { margin-bottom: 12px; }
@@ -104,6 +107,7 @@
   input, select, button { font: inherit; color: inherit; }
   input, select {
     width: 100%;
+    min-width: 0;
     padding: 9px 11px;
     border: 1px solid var(--border);
     border-radius: 9px;
@@ -122,26 +126,41 @@
   button:hover { background: var(--surface-2); }
   button.primary { background: var(--primary); color: var(--primary-text); border-color: var(--primary); font-weight: 700; }
   button.primary:hover { filter: brightness(1.08); }
+  button.primary.green { background: var(--ok); border-color: var(--ok); color: #fff; }
   button.danger { color: var(--danger); }
   button.small { padding: 4px 8px; font-size: .8rem; }
   button.link { border: 0; background: none; color: var(--primary); padding: 0; font-size: .85rem; }
   .form-actions { display: flex; gap: 8px; }
   .form-actions .primary { flex: 1; }
 
+  /* entry tabs */
+  .tabs { display: flex; gap: 4px; background: var(--surface-2); border-radius: 11px; padding: 4px; margin-bottom: 14px; }
+  .tabs button { flex: 1; border: 0; background: transparent; padding: 8px; font-weight: 500; color: var(--muted); }
+  .tabs button.active { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: var(--shadow); }
+
+  /* item lines in the expense form */
+  .lines-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .lines-head label { margin: 0; }
+  .lines { display: grid; gap: 8px; margin-bottom: 8px; }
+  .line { border: 1px solid var(--border); border-radius: 10px; padding: 8px; display: grid; grid-template-columns: 1fr 110px; gap: 6px; background: var(--bg); }
+  .line input, .line select { padding: 7px 9px; font-size: .92rem; }
+  .line .row2 { grid-column: 1 / -1; display: grid; grid-template-columns: 96px 1fr auto; gap: 6px; }
+  .line .remove { padding: 4px 10px; color: var(--muted); }
+  .lines-total { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .lines-total span:last-child { font-family: "Poppins", sans-serif; font-size: 1.1rem; }
+
   /* client summary table */
+  .table-wrap { overflow-x: auto; }
   .summary { width: 100%; border-collapse: collapse; font-size: .92rem; }
-  .summary th { text-align: left; color: var(--muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 0 8px 8px; border-bottom: 1px solid var(--border); }
+  .summary th { text-align: left; color: var(--muted); font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 0 8px 8px; border-bottom: 1px solid var(--border); }
   .summary td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   .summary .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .summary tbody tr { cursor: pointer; }
   .summary tbody tr:hover { background: var(--surface-2); }
   .summary tbody tr.active { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--primary); }
   .summary tfoot td { font-weight: 700; border-bottom: 0; }
-  .summary .share { width: 28%; }
-  .share-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
-  .share-bar span { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
   .client-name { font-weight: 600; overflow-wrap: anywhere; }
-  .client-sub { color: var(--muted); font-size: .78rem; }
+  .client-sub { color: var(--muted); font-size: .76rem; margin-top: 2px; }
 
   .cat-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; margin-bottom: 10px; font-size: .9rem; }
   .cat-row .bar { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
@@ -152,10 +171,9 @@
   /* clients manager */
   .client-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
   .client-item:last-child { border-bottom: 0; }
-  .client-item .head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-  .client-item .totals { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .client-item .totals { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
   .client-item .btns { display: flex; gap: 4px; margin-top: 6px; }
-  .badge { font-size: .7rem; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--muted); margin-left: 6px; }
+  .badge { font-size: .7rem; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--muted); margin-left: 6px; font-weight: 500; }
 
   .list-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .list-head h2 { margin: 0; }
@@ -163,14 +181,19 @@
   .filters input, .filters select { width: auto; max-width: 100%; }
 
   .group { margin-top: 14px; }
-  .group-head { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 0 4px 6px; border-bottom: 1px solid var(--border); }
-  .item { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+  .group-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; color: var(--muted); font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 0 4px 6px; border-bottom: 1px solid var(--border); }
+  .item { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 10px; align-items: start; padding: 10px 4px; border-bottom: 1px solid var(--border); }
   .item:last-child { border-bottom: 0; }
   .dot { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 1.1rem; }
   .item .title { font-weight: 500; overflow-wrap: anywhere; }
   .item .meta { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
-  .item .amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .item .amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 2px; }
+  .item .amount.in { color: var(--ok); }
   .item .actions { display: flex; gap: 4px; }
+  .item.payment .dot { background: var(--ok-bg); }
+  .lview { margin-top: 6px; border-left: 2px solid var(--border); padding-left: 8px; display: grid; gap: 2px; }
+  .lview div { display: flex; justify-content: space-between; gap: 10px; font-size: .84rem; }
+  .lview span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); }
 
   .empty { text-align: center; color: var(--muted); padding: 28px 8px; }
   .tools { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -200,10 +223,10 @@
   dialog.modal .form-actions .primary { flex: 0 0 auto; }
   button.primary.danger-fill { background: var(--danger); border-color: var(--danger); color: #fff; }
 
-  @media (max-width: 860px) {
+  @media (max-width: 900px) {
     .grid { grid-template-columns: 1fr; }
     .side, .main { display: contents; }
-    #form { order: 1; }
+    #entryCard { order: 1; }
     #summaryCard { order: 2; }
     #listCard { order: 3; }
     #clientsCard { order: 4; }
@@ -215,7 +238,10 @@
     .item { grid-template-columns: 32px 1fr auto; }
     .item .actions { grid-column: 2 / -1; justify-content: flex-end; }
     .dot { width: 32px; height: 32px; }
-    .summary .share { display: none; }
+    .summary { font-size: .84rem; }
+    .summary th, .summary td { padding-left: 4px; padding-right: 4px; }
+    .summary .client-sub { display: none; }
+    .stat .value { font-size: 1.15rem; }
   }
 
   @media print {
@@ -223,14 +249,16 @@
       --bg: #fff; --surface: #fff; --surface-2: #eee; --text: #000; --muted: #444; --border: #ccc; --primary: #2A1FA8; --shadow: none;
     }
     .wrap { max-width: none; padding: 0; }
-    .no-print, #form, #clientsCard, #dataCard, .top-controls, .item .actions, .filters, .toast { display: none !important; }
+    .no-print, #entryCard, #clientsCard, #dataCard, .top-controls, .item .actions, .filters, .toast { display: none !important; }
     .print-only { display: block; }
     .grid { grid-template-columns: 1fr; }
+    .side, .main { display: contents; }
+    #summaryCard { order: 1; } #listCard { order: 2; } #catCard { order: 3; }
     .card { border: 0; padding: 0; break-inside: auto; }
     .summary tbody tr.active { box-shadow: none; }
     .stats { grid-template-columns: repeat(4, 1fr); }
     .stat { border: 1px solid var(--border) !important; padding: 10px !important; }
-    .group { break-inside: avoid; }
+    .item { break-inside: avoid; }
   }
 </style>
 </head>
@@ -257,19 +285,19 @@
 
   <section class="stats">
     <div class="card stat">
+      <div class="label">Received this month</div>
+      <div class="value pos" id="statIn">–</div>
+      <div class="sub" id="statInSub"></div>
+    </div>
+    <div class="card stat">
       <div class="label">Spent this month</div>
-      <div class="value" id="statTotal">–</div>
-      <div class="sub" id="statPrev"></div>
+      <div class="value" id="statOut">–</div>
+      <div class="sub" id="statOutSub"></div>
     </div>
     <div class="card stat">
-      <div class="label">Clients with spend</div>
-      <div class="value" id="statClients">–</div>
-      <div class="sub" id="statClientsSub"></div>
-    </div>
-    <div class="card stat">
-      <div class="label">Highest-spend client</div>
-      <div class="value" id="statTop">–</div>
-      <div class="sub" id="statTopSub"></div>
+      <div class="label">Balance this month</div>
+      <div class="value" id="statBal">–</div>
+      <div class="sub">received − spent</div>
     </div>
     <div class="card stat">
       <div class="label">Biggest category</div>
@@ -280,71 +308,125 @@
 
   <div class="grid">
     <div class="side">
-      <form class="card" id="form" autocomplete="off">
-        <h2 id="formTitle">Record expense</h2>
-        <div class="field">
-          <label for="client">Client / project</label>
-          <div class="inline">
-            <select id="client" required></select>
-            <button type="button" id="quickClient" title="Add a new client">+ New</button>
-          </div>
+      <div class="card" id="entryCard">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tabExpense" class="active" aria-selected="true">Expense</button>
+          <button type="button" role="tab" id="tabPayment" aria-selected="false">Payment received</button>
         </div>
-        <div class="row-2">
+
+        <!-- expense (one bill, many items) -->
+        <form id="form" autocomplete="off">
+          <h2 id="formTitle">Record expense</h2>
           <div class="field">
-            <label for="amount">Amount</label>
-            <input id="amount" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="0.00">
+            <label for="client">Client / project</label>
+            <div class="inline">
+              <select id="client" required></select>
+              <button type="button" class="quick-client" data-target="client" title="Add a new client">+ New</button>
+            </div>
           </div>
-          <div class="field">
-            <label for="date">Date</label>
-            <input id="date" type="date" required>
-          </div>
-        </div>
-        <div class="row-2" style="grid-template-columns: 1.6fr 1fr;">
-          <div class="field">
-            <label for="item">Item</label>
-            <input id="item" type="text" list="itemList" maxlength="60" placeholder="e.g. Plywood">
-            <datalist id="itemList"></datalist>
-          </div>
-          <div class="field">
-            <label for="qty">Quantity</label>
-            <input id="qty" type="text" maxlength="30" placeholder="e.g. 12 sheets">
-          </div>
-        </div>
-        <div class="field">
-          <label for="category">Category</label>
-          <select id="category" required></select>
-        </div>
-        <div class="field">
-          <label for="vendor">Vendor / paid to</label>
-          <input id="vendor" type="text" maxlength="80" placeholder="e.g. vendor, shop or contractor name">
-        </div>
-        <div class="field">
-          <label for="note">Description / work area</label>
-          <input id="note" type="text" maxlength="160" placeholder="e.g. 18mm BWP ply for kitchen cabinets">
-        </div>
-        <div class="row-2">
-          <div class="field">
-            <label for="method">Paid with</label>
-            <select id="method">
-              <option>UPI</option>
-              <option>Cash</option>
-              <option>Bank transfer</option>
-              <option>Cheque</option>
-              <option>Company card</option>
-              <option>Paid by client</option>
-              <option>Other</option>
-            </select>
+          <div class="row-2">
+            <div class="field">
+              <label for="date">Date</label>
+              <input id="date" type="date" required>
+            </div>
+            <div class="field">
+              <label for="bill">Bill / invoice no.</label>
+              <input id="bill" type="text" maxlength="40" placeholder="Optional">
+            </div>
           </div>
           <div class="field">
-            <label for="bill">Bill / invoice no.</label>
-            <input id="bill" type="text" maxlength="40" placeholder="Optional">
+            <label for="vendor">Vendor / paid to</label>
+            <input id="vendor" type="text" maxlength="80" placeholder="e.g. vendor, shop or contractor name">
           </div>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="primary" id="submitBtn">Add expense</button>
-          <button type="button" id="cancelEdit" hidden>Cancel</button>
-        </div>
-      </form>
+
+          <div class="lines-head">
+            <label>Items</label>
+            <button type="button" class="link" id="addLine">+ Add item</button>
+          </div>
+          <div class="lines" id="lines"></div>
+          <datalist id="itemList"></datalist>
+          <div class="lines-total"><span id="linesCount">Total</span><span id="linesTotal">₹0</span></div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="method">Paid with</label>
+              <select id="method">
+                <option>UPI</option>
+                <option>Cash</option>
+                <option>Bank transfer</option>
+                <option>Cheque</option>
+                <option>Company card</option>
+                <option>Paid by client</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="note">Note / work area</label>
+              <input id="note" type="text" maxlength="160" placeholder="e.g. Kitchen">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary" id="submitBtn">Add expense</button>
+            <button type="button" id="cancelEdit" hidden>Cancel</button>
+          </div>
+        </form>
+
+        <!-- payment received from client -->
+        <form id="payForm" autocomplete="off" hidden>
+          <h2 id="payTitle">Payment received</h2>
+          <div class="field">
+            <label for="payClient">From client</label>
+            <div class="inline">
+              <select id="payClient" required></select>
+              <button type="button" class="quick-client" data-target="payClient" title="Add a new client">+ New</button>
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="payAmount">Amount received</label>
+              <input id="payAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="0">
+            </div>
+            <div class="field">
+              <label for="payDate">Date</label>
+              <input id="payDate" type="date" required>
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="payMethod">Received via</label>
+              <select id="payMethod">
+                <option>Bank transfer</option>
+                <option>UPI</option>
+                <option>Cash</option>
+                <option>Cheque</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="payRef">Reference no.</label>
+              <input id="payRef" type="text" maxlength="40" placeholder="Optional">
+            </div>
+          </div>
+          <div class="field">
+            <label for="payNote">Note</label>
+            <input id="payNote" type="text" maxlength="160" list="payNotes" placeholder="e.g. Advance, 2nd instalment">
+            <datalist id="payNotes">
+              <option value="Advance"></option>
+              <option value="Booking amount"></option>
+              <option value="1st instalment"></option>
+              <option value="2nd instalment"></option>
+              <option value="3rd instalment"></option>
+              <option value="Final payment"></option>
+              <option value="Material advance"></option>
+              <option value="Design fee"></option>
+            </datalist>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary green" id="paySubmit">Add payment</button>
+            <button type="button" id="payCancel" hidden>Cancel</button>
+          </div>
+        </form>
+      </div>
 
       <div class="card" id="clientsCard">
         <h2>Clients</h2>
@@ -366,11 +448,6 @@
         <button type="button" class="link" id="toggleArchived" hidden></button>
       </div>
 
-      <div class="card" id="catCard">
-        <h2>By category · <span id="catMonth"></span></h2>
-        <div id="breakdown"></div>
-      </div>
-
       <div class="card" id="dataCard">
         <h2>Data</h2>
         <div class="tools">
@@ -386,14 +463,19 @@
 
     <div class="main">
       <section class="card" id="summaryCard">
-        <h2 id="summaryTitle">Spend by client</h2>
+        <h2 id="summaryTitle">Clients this month</h2>
         <div id="summary"></div>
       </section>
 
       <section class="card" id="listCard">
         <div class="list-head">
-          <h2 id="listTitle">Expenses</h2>
+          <h2 id="listTitle">Records</h2>
           <div class="filters">
+            <select id="filterType" aria-label="Filter by type">
+              <option value="">Expenses &amp; payments</option>
+              <option value="expense">Expenses only</option>
+              <option value="payment">Payments only</option>
+            </select>
             <select id="filterClient" aria-label="Filter by client"></select>
             <select id="filterCat" aria-label="Filter by category"></select>
             <select id="groupBy" aria-label="Group by">
@@ -405,6 +487,11 @@
         </div>
         <div id="list"></div>
       </section>
+
+      <div class="card" id="catCard">
+        <h2>Spend by category · <span id="catMonth"></span></h2>
+        <div id="breakdown"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -456,12 +543,38 @@
   const DEFAULT_CLIENTS = ["Soman Adva", "Arun", "Vyshnavi"];
   let storageOk = true;
   let state = load();
-  let editingId = null;
+  let editingId = null;       // expense being edited
+  let editingPayId = null;    // payment being edited
   let editingClientId = null;
   let showArchived = false;
 
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function isDate(d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); }
+
+  // Older records had a single item on the expense itself; turn them into one-line bills.
+  function normalizeExpense(e) {
+    if (!e || typeof e.id !== "string" || !isDate(e.date)) return null;
+    let lines = Array.isArray(e.lines)
+      ? e.lines
+      : [{ item: e.item || "", qty: e.qty || "", category: e.category, amount: e.amount }];
+    lines = lines
+      .map(l => ({ item: String(l.item || ""), qty: String(l.qty || ""), category: catInfo(l.category).name, amount: round2(Number(l.amount)) }))
+      .filter(l => l.amount > 0);
+    if (!lines.length) return null;
+    return {
+      id: e.id, createdAt: e.createdAt || 0, clientId: e.clientId, date: e.date,
+      vendor: e.vendor || "", method: e.method || "Other", bill: e.bill || "", note: e.note || "",
+      lines, amount: round2(lines.reduce((s, l) => s + l.amount, 0))
+    };
+  }
+  function normalizePayment(p) {
+    if (!p || typeof p.id !== "string" || !isDate(p.date) || !(Number(p.amount) > 0)) return null;
+    return { id: p.id, createdAt: p.createdAt || 0, clientId: p.clientId, date: p.date, amount: round2(Number(p.amount)), method: p.method || "Other", ref: p.ref || "", note: p.note || "" };
+  }
+
   function load() {
-    let loaded = { clients: [], expenses: [], theme: "", seeded: false };
+    let loaded = { clients: [], expenses: [], payments: [], theme: "", seeded: false };
     try {
       const raw = localStorage.getItem(STORE_KEY);
       if (raw) {
@@ -470,7 +583,8 @@
         const ids = new Set(clients.map(c => c.id));
         loaded = {
           clients,
-          expenses: Array.isArray(data.expenses) ? data.expenses.filter(e => validExpense(e) && ids.has(e.clientId)) : [],
+          expenses: (Array.isArray(data.expenses) ? data.expenses : []).map(normalizeExpense).filter(e => e && ids.has(e.clientId)),
+          payments: (Array.isArray(data.payments) ? data.payments : []).map(normalizePayment).filter(p => p && ids.has(p.clientId)),
           theme: data.theme || "",
           seeded: !!data.seeded
         };
@@ -498,10 +612,7 @@
     }
     $("storageBanner").hidden = storageOk;
   }
-  function validExpense(e) {
-    return e && typeof e.id === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && Number(e.amount) > 0;
-  }
-  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
   const clientById = id => state.clients.find(c => c.id === id);
   const clientName = id => (clientById(id) || { name: "Unknown client" }).name;
   const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -517,12 +628,11 @@
     const d = new Date(y, m - 1 + delta, 1);
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
   }
+  const fmtWhole = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmtPaise = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
   function money(n) {
-    try {
-      return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(n);
-    } catch (e) {
-      return n.toFixed(2);
-    }
+    const r = round2(n);
+    return (Number.isInteger(r) ? fmtWhole : fmtPaise).format(r);
   }
   function monthLabel(ym) {
     const [y, m] = ym.split("-").map(Number);
@@ -532,8 +642,9 @@
     const [y, m, d] = iso.split("-").map(Number);
     return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
   }
-  const sum = arr => arr.reduce((s, e) => s + e.amount, 0);
+  const sum = arr => round2(arr.reduce((s, e) => s + e.amount, 0));
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const lineLabel = l => [l.item || l.category, l.qty && `(${l.qty})`].filter(Boolean).join(" ");
   function el(tag, attrs, ...children) {
     const node = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs || {})) {
@@ -592,34 +703,103 @@
     });
   }
 
+  // ---------- item lines (expense form) ----------
+  function addLine(data = {}) {
+    const item = el("input", { type: "text", list: "itemList", maxlength: "60", placeholder: "Item, e.g. Plywood", "aria-label": "Item", class: "l-item" });
+    const amount = el("input", { type: "number", inputmode: "decimal", min: "0", step: "0.01", placeholder: "Amount", "aria-label": "Amount", class: "l-amount" });
+    const qty = el("input", { type: "text", maxlength: "30", placeholder: "Qty", "aria-label": "Quantity", class: "l-qty" });
+    const cat = el("select", { "aria-label": "Category", class: "l-cat" });
+    for (const c of CATEGORIES) cat.append(el("option", { value: c.name }, `${c.icon} ${c.name}`));
+    const remove = el("button", { type: "button", class: "remove", title: "Remove item", "aria-label": "Remove item" }, "✕");
+    const row = el("div", { class: "line" }, item, amount, el("div", { class: "row2" }, qty, cat, remove));
+
+    item.value = data.item || "";
+    qty.value = data.qty || "";
+    amount.value = data.amount || "";
+    cat.value = data.category ? catInfo(data.category).name : (itemCategory[(data.item || "").toLowerCase()] || "Materials");
+
+    item.addEventListener("input", () => {
+      const c = itemCategory[item.value.trim().toLowerCase()];
+      if (c) cat.value = c;
+    });
+    amount.addEventListener("input", updateLinesTotal);
+    remove.addEventListener("click", () => {
+      if ($("lines").children.length > 1) row.remove();
+      else { item.value = ""; qty.value = ""; amount.value = ""; cat.value = "Materials"; }
+      updateLinesTotal();
+    });
+    $("lines").append(row);
+    updateLinesTotal();
+    return row;
+  }
+  function resetLines(lines) {
+    $("lines").replaceChildren();
+    for (const l of (lines && lines.length ? lines : [{}])) addLine(l);
+  }
+  function readLines() {
+    const lines = [];
+    for (const row of $("lines").children) {
+      const item = row.querySelector(".l-item").value.trim();
+      const qty = row.querySelector(".l-qty").value.trim();
+      const raw = row.querySelector(".l-amount").value.trim();
+      if (!item && !qty && !raw) continue;
+      const amount = round2(parseFloat(raw));
+      if (!(amount > 0)) return { error: `Enter an amount for "${item || "each item"}"`, focus: row.querySelector(".l-amount") };
+      lines.push({ item, qty, category: row.querySelector(".l-cat").value, amount });
+    }
+    return { lines };
+  }
+  function updateLinesTotal() {
+    let total = 0, count = 0;
+    for (const row of $("lines").children) {
+      const a = parseFloat(row.querySelector(".l-amount").value);
+      if (a > 0) { total += a; count++; }
+    }
+    $("linesCount").textContent = count ? `Total · ${plural(count, "item")}` : "Total";
+    $("linesTotal").textContent = money(total);
+  }
+
   // ---------- setup ----------
-  for (const c of CATEGORIES) $("category").append(el("option", { value: c.name }, `${c.icon} ${c.name}`));
   for (const c of CATEGORIES) for (const it of c.items) $("itemList").append(el("option", { value: it }, c.name));
-  $("item").addEventListener("input", () => {
-    const cat = itemCategory[$("item").value.trim().toLowerCase()];
-    if (cat) $("category").value = cat;
-  });
   $("filterCat").append(el("option", { value: "" }, "All categories"));
   for (const c of CATEGORIES) $("filterCat").append(el("option", { value: c.name }, c.name));
 
   $("month").value = monthOf(todayISO());
   $("date").value = todayISO();
+  $("payDate").value = todayISO();
+  resetLines();
   applyTheme();
 
+  function setTab(tab) {
+    const pay = tab === "payment";
+    $("form").hidden = pay;
+    $("payForm").hidden = !pay;
+    $("tabExpense").classList.toggle("active", !pay);
+    $("tabPayment").classList.toggle("active", pay);
+    $("tabExpense").setAttribute("aria-selected", String(!pay));
+    $("tabPayment").setAttribute("aria-selected", String(pay));
+  }
+  $("tabExpense").addEventListener("click", () => setTab("expense"));
+  $("tabPayment").addEventListener("click", () => setTab("payment"));
+
   // ---------- render ----------
-  function renderClientSelects() {
-    const formSel = $("client");
-    const keep = formSel.value;
-    formSel.replaceChildren();
+  function fillClientSelect(sel, archivedIdToKeep) {
+    const keep = sel.value;
+    sel.replaceChildren();
     const active = state.clients.filter(c => !c.archived).sort(byName);
-    if (!active.length) formSel.append(el("option", { value: "" }, "Add a client first →"));
-    for (const c of active) formSel.append(el("option", { value: c.id }, c.name));
-    // keep an archived client selectable while editing one of its expenses
-    const editing = editingId && state.expenses.find(x => x.id === editingId);
-    if (editing && clientById(editing.clientId)?.archived) {
-      formSel.append(el("option", { value: editing.clientId }, `${clientName(editing.clientId)} (archived)`));
+    if (!active.length) sel.append(el("option", { value: "" }, "Add a client first"));
+    for (const c of active) sel.append(el("option", { value: c.id }, c.name));
+    // keep an archived client selectable while editing one of its records
+    if (archivedIdToKeep && clientById(archivedIdToKeep)?.archived) {
+      sel.append(el("option", { value: archivedIdToKeep }, `${clientName(archivedIdToKeep)} (archived)`));
     }
-    if ([...formSel.options].some(o => o.value === keep)) formSel.value = keep;
+    if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+  }
+  function renderClientSelects() {
+    const editingExp = editingId && state.expenses.find(x => x.id === editingId);
+    const editingPay = editingPayId && state.payments.find(x => x.id === editingPayId);
+    fillClientSelect($("client"), editingExp && editingExp.clientId);
+    fillClientSelect($("payClient"), editingPay && editingPay.clientId);
 
     const fSel = $("filterClient");
     const keepF = fSel.value;
@@ -628,78 +808,81 @@
     fSel.value = [...fSel.options].some(o => o.value === keepF) ? keepF : "";
   }
 
+  function projectTotals() {
+    const m = new Map();
+    const get = id => { if (!m.has(id)) m.set(id, { spent: 0, received: 0 }); return m.get(id); };
+    for (const e of state.expenses) get(e.clientId).spent += e.amount;
+    for (const p of state.payments) get(p.clientId).received += p.amount;
+    return { get: id => m.get(id) || { spent: 0, received: 0 } };
+  }
+  const balanceClass = n => (n < 0 ? "neg" : n > 0 ? "pos" : "");
+
   function render() {
     renderClientSelects();
     const ym = currentMonth();
-    const monthExpenses = state.expenses.filter(e => monthOf(e.date) === ym);
-    const total = sum(monthExpenses);
-    $("printHeading").textContent = `Expense report · ${monthLabel(ym)}`;
+    const monthExp = state.expenses.filter(e => monthOf(e.date) === ym);
+    const monthPay = state.payments.filter(p => monthOf(p.date) === ym);
+    const spent = sum(monthExp);
+    const received = sum(monthPay);
+    $("printHeading").textContent = `Client expense & payment report · ${monthLabel(ym)}`;
 
     // stats
-    $("statTotal").textContent = money(total);
-    const prevTotal = sum(state.expenses.filter(e => monthOf(e.date) === shiftMonth(ym, -1)));
-    if (prevTotal > 0) {
-      const diff = ((total - prevTotal) / prevTotal) * 100;
-      $("statPrev").textContent = `${diff >= 0 ? "▲" : "▼"} ${Math.abs(diff).toFixed(0)}% vs last month`;
-    } else {
-      $("statPrev").textContent = plural(monthExpenses.length, "expense");
-    }
-
-    const byClient = new Map();
-    for (const e of monthExpenses) {
-      const row = byClient.get(e.clientId) || { total: 0, count: 0 };
-      row.total += e.amount; row.count++;
-      byClient.set(e.clientId, row);
-    }
-    const clientRows = [...byClient.entries()].sort((a, b) => b[1].total - a[1].total);
-    $("statClients").textContent = String(clientRows.length);
-    $("statClientsSub").textContent = `of ${plural(state.clients.filter(c => !c.archived).length, "active client")}`;
-    if (clientRows.length) {
-      $("statTop").textContent = clientName(clientRows[0][0]);
-      $("statTopSub").textContent = `${money(clientRows[0][1].total)} · ${((clientRows[0][1].total / total) * 100).toFixed(0)}% of month`;
-    } else {
-      $("statTop").textContent = "–";
-      $("statTopSub").textContent = "";
-    }
+    $("statIn").textContent = money(received);
+    $("statInSub").textContent = plural(monthPay.length, "payment");
+    $("statOut").textContent = money(spent);
+    const prevSpent = sum(state.expenses.filter(e => monthOf(e.date) === shiftMonth(ym, -1)));
+    $("statOutSub").textContent = prevSpent > 0
+      ? `${spent >= prevSpent ? "▲" : "▼"} ${Math.abs(((spent - prevSpent) / prevSpent) * 100).toFixed(0)}% vs last month`
+      : plural(monthExp.length, "bill");
+    const bal = round2(received - spent);
+    $("statBal").textContent = money(bal);
+    $("statBal").className = "value " + balanceClass(bal);
 
     const byCat = {};
-    for (const e of monthExpenses) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
+    for (const e of monthExp) for (const l of e.lines) byCat[l.category] = (byCat[l.category] || 0) + l.amount;
     const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
     if (cats.length) {
       $("statCat").textContent = `${catInfo(cats[0][0]).icon} ${cats[0][0]}`;
-      $("statCatSub").textContent = `${money(cats[0][1])} · ${((cats[0][1] / total) * 100).toFixed(0)}% of month`;
+      $("statCatSub").textContent = `${money(cats[0][1])} · ${((cats[0][1] / spent) * 100).toFixed(0)}% of spend`;
     } else {
       $("statCat").textContent = "–";
       $("statCatSub").textContent = "";
     }
 
-    renderSummary(ym, clientRows, total);
-    renderCategories(ym, cats, total);
+    renderSummary(ym, monthExp, monthPay, spent, received);
+    renderCategories(ym, cats, spent);
     renderClients();
-    renderList(ym, monthExpenses);
+    renderList(ym, monthExp, monthPay);
   }
 
-  function renderSummary(ym, clientRows, total) {
-    $("summaryTitle").textContent = `Spend by client · ${monthLabel(ym)}`;
+  function renderSummary(ym, monthExp, monthPay, spent, received) {
+    $("summaryTitle").textContent = `Clients · ${monthLabel(ym)}`;
     const box = $("summary");
     box.replaceChildren();
-    if (!clientRows.length) {
-      box.append(el("div", { class: "empty" }, state.clients.length ? "No client expenses recorded for this month." : "Start by adding a client, then record expenses against them."));
+    const rows = new Map();
+    const get = id => { if (!rows.has(id)) rows.set(id, { spent: 0, received: 0, bills: 0, pays: 0 }); return rows.get(id); };
+    for (const e of monthExp) { const r = get(e.clientId); r.spent += e.amount; r.bills++; }
+    for (const p of monthPay) { const r = get(p.clientId); r.received += p.amount; r.pays++; }
+    if (!rows.size) {
+      box.append(el("div", { class: "empty" }, state.clients.length ? "No expenses or payments recorded for this month." : "Start by adding a client."));
       return;
     }
-    const allTime = clientTotals();
+    const totals = projectTotals();
     const selected = $("filterClient").value;
     const tbody = el("tbody");
-    for (const [id, row] of clientRows) {
+    const sorted = [...rows.entries()].sort((a, b) => (b[1].spent + b[1].received) - (a[1].spent + a[1].received));
+    for (const [id, r] of sorted) {
       const c = clientById(id);
-      const pct = (row.total / total) * 100;
-      let sub = plural(row.count, "expense");
-      if (c && c.budget > 0) sub += ` · project ${money(allTime.get(id) || 0)} of ${money(c.budget)}`;
-      const tr = el("tr", { class: id === selected ? "active" : "", title: "Show this client's expenses" },
+      const t = totals.get(id);
+      const projBal = round2(t.received - t.spent);
+      let sub = `Project: received ${money(t.received)} · spent ${money(t.spent)} · balance ${money(projBal)}`;
+      if (c && c.budget > 0) sub += ` · budget ${money(c.budget)}`;
+      const monthBal = round2(r.received - r.spent);
+      const tr = el("tr", { class: id === selected ? "active" : "", title: "Show this client's records" },
         el("td", null, el("div", { class: "client-name" }, clientName(id)), el("div", { class: "client-sub" }, sub)),
-        el("td", { class: "share" }, el("div", { class: "share-bar" }, el("span", { style: `width:${pct}%` }))),
-        el("td", { class: "num" }, `${pct.toFixed(0)}%`),
-        el("td", { class: "num" }, money(row.total))
+        el("td", { class: "num pos" }, r.received ? money(r.received) : "–"),
+        el("td", { class: "num" }, r.spent ? money(r.spent) : "–"),
+        el("td", { class: "num " + balanceClass(monthBal) }, money(monthBal))
       );
       tr.addEventListener("click", () => {
         $("filterClient").value = id === selected ? "" : id;
@@ -708,18 +891,24 @@
       });
       tbody.append(tr);
     }
-    box.append(el("table", { class: "summary" },
-      el("thead", null, el("tr", null, el("th", null, "Client"), el("th", { class: "share" }, ""), el("th", { class: "num" }, "Share"), el("th", { class: "num" }, "Spent"))),
+    const bal = round2(received - spent);
+    box.append(el("div", { class: "table-wrap" }, el("table", { class: "summary" },
+      el("thead", null, el("tr", null,
+        el("th", null, "Client"), el("th", { class: "num" }, "Received"), el("th", { class: "num" }, "Spent"), el("th", { class: "num" }, "Balance"))),
       tbody,
-      el("tfoot", null, el("tr", null, el("td", null, "Total"), el("td", { class: "share" }, ""), el("td", { class: "num" }, ""), el("td", { class: "num" }, money(total))))
-    ));
+      el("tfoot", null, el("tr", null,
+        el("td", null, "Total"),
+        el("td", { class: "num pos" }, money(received)),
+        el("td", { class: "num" }, money(spent)),
+        el("td", { class: "num " + balanceClass(bal) }, money(bal))))
+    )));
   }
 
   function renderCategories(ym, cats, total) {
     $("catMonth").textContent = monthLabel(ym);
     const bd = $("breakdown");
     bd.replaceChildren();
-    if (!cats.length) bd.append(el("div", { class: "empty", style: "padding:12px" }, "Nothing recorded this month."));
+    if (!cats.length) bd.append(el("div", { class: "empty", style: "padding:12px" }, "No expenses this month."));
     for (const [name, amt] of cats) {
       const c = catInfo(name);
       const pct = (amt / total) * 100;
@@ -731,33 +920,29 @@
     }
   }
 
-  function clientTotals() {
-    const m = new Map();
-    for (const e of state.expenses) m.set(e.clientId, (m.get(e.clientId) || 0) + e.amount);
-    return m;
-  }
-
   function renderClients() {
     const list = $("clientList");
     list.replaceChildren();
-    const totals = clientTotals();
+    const totals = projectTotals();
     const archivedCount = state.clients.filter(c => c.archived).length;
     const shown = state.clients.filter(c => showArchived || !c.archived).sort(byName);
     if (!state.clients.length) list.append(el("div", { class: "note", style: "margin:0" }, "No clients yet."));
     for (const c of shown) {
-      const spent = totals.get(c.id) || 0;
-      let totalsText = `${money(spent)} spent in total`;
-      let meter = null;
+      const t = totals.get(c.id);
+      const bal = round2(t.received - t.spent);
+      let budgetLine = null, meter = null;
       if (c.budget > 0) {
-        const left = c.budget - spent;
-        totalsText = `${money(spent)} of ${money(c.budget)} · ${left >= 0 ? money(left) + " left" : money(-left) + " over"}`;
-        meter = el("div", { class: "meter" + (left < 0 ? " is-over" : "") }, el("span", { style: `width:${Math.min(100, (spent / c.budget) * 100)}%` }));
+        const left = round2(c.budget - t.spent);
+        budgetLine = el("div", { class: "totals" + (left < 0 ? " neg" : "") },
+          `Budget ${money(c.budget)} · ${left >= 0 ? money(left) + " left" : money(-left) + " over"}`);
+        meter = el("div", { class: "meter" + (left < 0 ? " is-over" : "") }, el("span", { style: `width:${Math.min(100, (t.spent / c.budget) * 100)}%` }));
       }
       list.append(el("div", { class: "client-item" },
-        el("div", { class: "head" },
-          el("span", { class: "client-name" }, c.name, c.archived ? el("span", { class: "badge" }, "archived") : null)
-        ),
-        el("div", { class: "totals" + (c.budget > 0 && spent > c.budget ? " over" : "") }, totalsText),
+        el("div", { class: "client-name" }, c.name, c.archived ? el("span", { class: "badge" }, "archived") : null),
+        el("div", { class: "totals" },
+          `Received ${money(t.received)} · Spent ${money(t.spent)} · `,
+          el("strong", { class: balanceClass(bal) }, `Balance ${money(bal)}`)),
+        budgetLine,
         meter,
         el("div", { class: "btns" },
           el("button", { class: "small", type: "button", onclick: () => startEditClient(c.id) }, "Edit"),
@@ -771,68 +956,115 @@
     t.textContent = showArchived ? "Hide archived clients" : `Show ${plural(archivedCount, "archived client")}`;
   }
 
-  function renderList(ym, monthExpenses) {
+  function renderList(ym, monthExp, monthPay) {
+    const fType = $("filterType").value;
     const fClient = $("filterClient").value;
-    $("listTitle").textContent = fClient ? `${clientName(fClient)} · ${monthLabel(ym)}` : `Expenses · ${monthLabel(ym)}`;
+    const fCat = $("filterCat").value;
     const q = $("search").value.trim().toLowerCase();
-    const fc = $("filterCat").value;
-    const shown = monthExpenses
-      .filter(e => (!fClient || e.clientId === fClient) && (!fc || e.category === fc))
-      .filter(e => !q || [e.item, e.note, e.vendor, e.bill, e.category, e.method, clientName(e.clientId)].some(v => (v || "").toLowerCase().includes(q)))
-      .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+    $("listTitle").textContent = fClient ? `${clientName(fClient)} · ${monthLabel(ym)}` : `Records · ${monthLabel(ym)}`;
+
+    const records = [];
+    if (fType !== "payment") for (const e of monthExp) records.push({ kind: "expense", r: e });
+    if (fType !== "expense" && !fCat) for (const p of monthPay) records.push({ kind: "payment", r: p });
+
+    const matches = ({ kind, r }) => {
+      if (fClient && r.clientId !== fClient) return false;
+      if (fCat && !(kind === "expense" && r.lines.some(l => l.category === fCat))) return false;
+      if (!q) return true;
+      const text = kind === "expense"
+        ? [r.vendor, r.bill, r.note, r.method, ...r.lines.flatMap(l => [l.item, l.qty, l.category])]
+        : ["payment received", r.note, r.ref, r.method];
+      return [clientName(r.clientId), ...text].some(v => (v || "").toLowerCase().includes(q));
+    };
+    const shown = records.filter(matches)
+      .sort((a, b) => b.r.date.localeCompare(a.r.date) || (b.r.createdAt || 0) - (a.r.createdAt || 0));
 
     const list = $("list");
     list.replaceChildren();
     if (!shown.length) {
-      list.append(el("div", { class: "empty" }, monthExpenses.length ? "No expenses match your filters." : "No expenses recorded for this month."));
+      list.append(el("div", { class: "empty" }, records.length ? "Nothing matches your filters." : "No records for this month."));
       return;
     }
 
     const groupByClient = $("groupBy").value === "client";
     const groups = new Map();
-    for (const e of shown) {
-      const key = groupByClient ? e.clientId : e.date;
+    for (const rec of shown) {
+      const key = groupByClient ? rec.r.clientId : rec.r.date;
       if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(e);
+      groups.get(key).push(rec);
     }
     let entries = [...groups.entries()];
-    if (groupByClient) entries.sort((a, b) => sum(b[1]) - sum(a[1]));
+    if (groupByClient) entries.sort((a, b) => clientName(a[0]).localeCompare(clientName(b[0])));
 
-    for (const [key, items] of entries) {
+    for (const [key, recs] of entries) {
+      const out = sum(recs.filter(x => x.kind === "expense").map(x => x.r));
+      const inn = sum(recs.filter(x => x.kind === "payment").map(x => x.r));
+      const headTotals = [inn ? `Received ${money(inn)}` : null, out ? `Spent ${money(out)}` : null].filter(Boolean).join(" · ");
       const group = el("div", { class: "group" },
         el("div", { class: "group-head" },
           el("span", null, groupByClient ? clientName(key) : dayLabel(key)),
-          el("span", null, money(sum(items)))
+          el("span", null, headTotals)
         )
       );
-      for (const e of items) {
-        const c = catInfo(e.category);
-        const meta = [
-          groupByClient ? dayLabel(e.date) : clientName(e.clientId),
-          e.category,
-          e.vendor,
-          e.method,
-          e.bill ? `Bill ${e.bill}` : null
-        ].filter(Boolean).join(" · ");
-        group.append(el("div", { class: "item" },
-          el("div", { class: "dot", style: `background:${c.color}22` }, c.icon),
-          el("div", null,
-            el("div", { class: "title" }, [e.item, e.qty && `(${e.qty})`].filter(Boolean).join(" ") || e.note || e.vendor || e.category),
-            e.item && e.note ? el("div", { class: "meta" }, e.note) : null,
-            el("div", { class: "meta" }, meta)
-          ),
-          el("div", { class: "amount" }, money(e.amount)),
-          el("div", { class: "actions" },
-            el("button", { class: "small", type: "button", onclick: () => startEdit(e.id) }, "Edit"),
-            el("button", { class: "small danger", type: "button", onclick: () => removeExpense(e.id) }, "Delete")
-          )
-        ));
-      }
+      for (const rec of recs) group.append(rec.kind === "expense" ? expenseRow(rec.r, groupByClient) : paymentRow(rec.r, groupByClient));
       list.append(group);
     }
   }
 
+  function expenseRow(e, groupByClient) {
+    const cats = [...new Set(e.lines.map(l => l.category))];
+    const icon = cats.length === 1 ? catInfo(cats[0]).icon : "🧾";
+    const color = cats.length === 1 ? catInfo(cats[0]).color : "#8A8FA8";
+    const single = e.lines.length === 1;
+    const title = e.vendor || (single ? lineLabel(e.lines[0]) : plural(e.lines.length, "item"));
+    const meta = [
+      groupByClient ? dayLabel(e.date) : clientName(e.clientId),
+      single ? e.lines[0].category : plural(e.lines.length, "item"),
+      e.method,
+      e.bill ? `Bill ${e.bill}` : null,
+      e.note
+    ].filter(Boolean).join(" · ");
+    // Show the item breakdown unless the title already says everything.
+    const showLines = !(single && !e.vendor);
+    return el("div", { class: "item" },
+      el("div", { class: "dot", style: `background:${color}22` }, icon),
+      el("div", null,
+        el("div", { class: "title" }, title),
+        el("div", { class: "meta" }, meta),
+        showLines ? el("div", { class: "lview" }, ...e.lines.map(l =>
+          el("div", null, el("span", null, `${catInfo(l.category).icon} ${lineLabel(l)}`), el("span", null, money(l.amount))))) : null
+      ),
+      el("div", { class: "amount" }, money(e.amount)),
+      el("div", { class: "actions" },
+        el("button", { class: "small", type: "button", onclick: () => startEdit(e.id) }, "Edit"),
+        el("button", { class: "small danger", type: "button", onclick: () => removeExpense(e.id) }, "Delete")
+      )
+    );
+  }
+
+  function paymentRow(p, groupByClient) {
+    const meta = [
+      groupByClient ? dayLabel(p.date) : clientName(p.clientId),
+      p.method,
+      p.ref ? `Ref ${p.ref}` : null
+    ].filter(Boolean).join(" · ");
+    return el("div", { class: "item payment" },
+      el("div", { class: "dot" }, "💰"),
+      el("div", null,
+        el("div", { class: "title" }, p.note ? `Payment received – ${p.note}` : "Payment received"),
+        el("div", { class: "meta" }, meta)
+      ),
+      el("div", { class: "amount in" }, "+" + money(p.amount)),
+      el("div", { class: "actions" },
+        el("button", { class: "small", type: "button", onclick: () => startEditPayment(p.id) }, "Edit"),
+        el("button", { class: "small danger", type: "button", onclick: () => removePayment(p.id) }, "Delete")
+      )
+    );
+  }
+
   // ---------- expense actions ----------
+  $("addLine").addEventListener("click", () => addLine().querySelector(".l-item").focus());
+
   $("form").addEventListener("submit", ev => {
     ev.preventDefault();
     const clientId = $("client").value;
@@ -841,18 +1073,18 @@
       $("clientName").focus();
       return;
     }
-    const amount = Math.round(parseFloat($("amount").value) * 100) / 100;
     const date = $("date").value;
-    if (!(amount > 0) || !date) return;
+    if (!isDate(date)) return toast("Pick a date");
+    const { lines, error, focus } = readLines();
+    if (error) { toast(error); focus.focus(); return; }
+    if (!lines.length) { toast("Add at least one item with an amount"); $("lines").querySelector(".l-item").focus(); return; }
     const data = {
-      clientId, amount, date,
-      category: $("category").value,
-      item: $("item").value.trim(),
-      qty: $("qty").value.trim(),
+      clientId, date, lines,
+      amount: round2(lines.reduce((s, l) => s + l.amount, 0)),
       vendor: $("vendor").value.trim(),
-      note: $("note").value.trim(),
+      bill: $("bill").value.trim(),
       method: $("method").value,
-      bill: $("bill").value.trim()
+      note: $("note").value.trim()
     };
 
     if (editingId) {
@@ -862,9 +1094,10 @@
       stopEdit();
     } else {
       state.expenses.push({ id: uid(), createdAt: Date.now(), ...data });
-      toast(`Added ${money(amount)} for ${clientName(clientId)}`);
-      for (const id of ["amount", "item", "qty", "vendor", "note", "bill"]) $(id).value = "";
-      $("amount").focus();
+      toast(`Added ${money(data.amount)} for ${clientName(clientId)}`);
+      for (const id of ["vendor", "bill", "note"]) $(id).value = "";
+      resetLines();
+      $("vendor").focus();
     }
     save();
     if (monthOf(date) !== currentMonth()) $("month").value = monthOf(date);
@@ -874,23 +1107,21 @@
   function startEdit(id) {
     const e = state.expenses.find(x => x.id === id);
     if (!e) return;
+    stopEditPayment();
+    setTab("expense");
     editingId = id;
     renderClientSelects();
     $("client").value = e.clientId;
-    $("amount").value = e.amount;
     $("date").value = e.date;
-    $("category").value = catInfo(e.category).name;
-    $("item").value = e.item || "";
-    $("qty").value = e.qty || "";
     $("vendor").value = e.vendor || "";
-    $("note").value = e.note || "";
-    $("method").value = e.method || "Other";
     $("bill").value = e.bill || "";
+    $("method").value = e.method || "Other";
+    $("note").value = e.note || "";
+    resetLines(e.lines);
     $("formTitle").textContent = "Edit expense";
     $("submitBtn").textContent = "Save changes";
     $("cancelEdit").hidden = false;
-    $("form").scrollIntoView({ behavior: "smooth", block: "start" });
-    $("amount").focus({ preventScroll: true });
+    $("entryCard").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function stopEdit() {
     const keepClient = $("client").value;
@@ -899,6 +1130,7 @@
     renderClientSelects();
     if ([...$("client").options].some(o => o.value === keepClient)) $("client").value = keepClient;
     $("date").value = todayISO();
+    resetLines();
     $("formTitle").textContent = "Record expense";
     $("submitBtn").textContent = "Add expense";
     $("cancelEdit").hidden = true;
@@ -913,6 +1145,78 @@
     save();
     render();
     toast("Expense deleted", () => { state.expenses.push(removed); save(); render(); });
+  }
+
+  // ---------- payment actions ----------
+  $("payForm").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const clientId = $("payClient").value;
+    if (!clientId || !clientById(clientId)) {
+      toast("Add a client first");
+      $("clientName").focus();
+      return;
+    }
+    const amount = round2(parseFloat($("payAmount").value));
+    const date = $("payDate").value;
+    if (!(amount > 0) || !isDate(date)) return;
+    const data = { clientId, amount, date, method: $("payMethod").value, ref: $("payRef").value.trim(), note: $("payNote").value.trim() };
+
+    if (editingPayId) {
+      const p = state.payments.find(x => x.id === editingPayId);
+      if (p) Object.assign(p, data);
+      toast("Payment updated");
+      stopEditPayment();
+    } else {
+      state.payments.push({ id: uid(), createdAt: Date.now(), ...data });
+      toast(`Received ${money(amount)} from ${clientName(clientId)}`);
+      for (const id of ["payAmount", "payRef", "payNote"]) $(id).value = "";
+      $("payAmount").focus();
+    }
+    save();
+    if (monthOf(date) !== currentMonth()) $("month").value = monthOf(date);
+    render();
+  });
+
+  function startEditPayment(id) {
+    const p = state.payments.find(x => x.id === id);
+    if (!p) return;
+    stopEdit();
+    setTab("payment");
+    editingPayId = id;
+    renderClientSelects();
+    $("payClient").value = p.clientId;
+    $("payAmount").value = p.amount;
+    $("payDate").value = p.date;
+    $("payMethod").value = p.method || "Other";
+    $("payRef").value = p.ref || "";
+    $("payNote").value = p.note || "";
+    $("payTitle").textContent = "Edit payment";
+    $("paySubmit").textContent = "Save changes";
+    $("payCancel").hidden = false;
+    $("entryCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("payAmount").focus({ preventScroll: true });
+  }
+  function stopEditPayment() {
+    const keepClient = $("payClient").value;
+    editingPayId = null;
+    $("payForm").reset();
+    renderClientSelects();
+    if ([...$("payClient").options].some(o => o.value === keepClient)) $("payClient").value = keepClient;
+    $("payDate").value = todayISO();
+    $("payTitle").textContent = "Payment received";
+    $("paySubmit").textContent = "Add payment";
+    $("payCancel").hidden = true;
+  }
+  $("payCancel").addEventListener("click", stopEditPayment);
+
+  function removePayment(id) {
+    const idx = state.payments.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const [removed] = state.payments.splice(idx, 1);
+    if (editingPayId === id) stopEditPayment();
+    save();
+    render();
+    toast("Payment deleted", () => { state.payments.push(removed); save(); render(); });
   }
 
   // ---------- client actions ----------
@@ -943,15 +1247,14 @@
       save();
       toast("Client updated");
       stopEditClient();
-    } else {
-      const c = addClient(name, budget);
-      $("clientForm").reset();
       render();
-      if (c && !c.archived) $("client").value = c.id;
-      if (c) toast(`Client "${c.name}" ready`);
       return;
     }
+    const c = addClient(name, budget);
+    $("clientForm").reset();
     render();
+    if (c && !c.archived) { $("client").value = c.id; $("payClient").value = c.id; }
+    if (c) toast(`Client "${c.name}" ready`);
   });
 
   function startEditClient(id) {
@@ -980,36 +1283,40 @@
     c.archived = !c.archived;
     save();
     render();
-    toast(c.archived ? `"${c.name}" archived — its expenses stay in your reports` : `"${c.name}" restored`);
+    toast(c.archived ? `"${c.name}" archived — their records stay in your reports` : `"${c.name}" restored`);
   }
 
   async function deleteClient(id) {
     const c = clientById(id);
     if (!c) return;
-    const theirs = state.expenses.filter(e => e.clientId === id);
-    const msg = theirs.length
-      ? `This also deletes their ${plural(theirs.length, "expense")} (${money(sum(theirs))}).\n\nIf the project is just finished, use Archive instead — that keeps the records.`
+    const exp = state.expenses.filter(e => e.clientId === id);
+    const pay = state.payments.filter(p => p.clientId === id);
+    const parts = [exp.length ? `${plural(exp.length, "expense")} (${money(sum(exp))})` : null, pay.length ? `${plural(pay.length, "payment")} (${money(sum(pay))})` : null].filter(Boolean);
+    const msg = parts.length
+      ? `This also deletes their ${parts.join(" and ")}.\n\nIf the project is just finished, use Archive instead — that keeps the records.`
       : "";
     if (!(await ask({ title: `Delete "${c.name}"?`, message: msg, okText: "Delete", danger: true }))) return;
-    const snapClients = state.clients.slice();
-    const snapExpenses = state.expenses.slice();
+    const snap = { clients: state.clients.slice(), expenses: state.expenses.slice(), payments: state.payments.slice() };
     state.clients = state.clients.filter(x => x.id !== id);
     state.expenses = state.expenses.filter(e => e.clientId !== id);
+    state.payments = state.payments.filter(p => p.clientId !== id);
     if (editingClientId === id) stopEditClient();
     if (editingId && !state.expenses.some(e => e.id === editingId)) stopEdit();
+    if (editingPayId && !state.payments.some(p => p.id === editingPayId)) stopEditPayment();
     save();
     render();
-    toast(`"${c.name}" deleted`, () => { state.clients = snapClients; state.expenses = snapExpenses; save(); render(); });
+    toast(`"${c.name}" deleted`, () => { Object.assign(state, snap); save(); render(); });
   }
 
-  $("quickClient").addEventListener("click", async () => {
-    const name = await ask({ title: "New client", input: { label: "Client / project name", placeholder: "e.g. Arun – 3BHK, Kakkanad" }, okText: "Add client" });
-    if (!name) return;
-    const c = addClient(name);
-    render();
-    if (c && !c.archived) $("client").value = c.id;
-    $("amount").focus();
-  });
+  for (const btn of document.querySelectorAll(".quick-client")) {
+    btn.addEventListener("click", async () => {
+      const name = await ask({ title: "New client", input: { label: "Client / project name", placeholder: "e.g. Arun – 3BHK, Kakkanad" }, okText: "Add client" });
+      if (!name) return;
+      const c = addClient(name);
+      render();
+      if (c && !c.archived) $(btn.dataset.target).value = c.id;
+    });
+  }
 
   $("toggleArchived").addEventListener("click", () => { showArchived = !showArchived; renderClients(); });
 
@@ -1018,7 +1325,7 @@
   $("prevMonth").addEventListener("click", () => { $("month").value = shiftMonth(currentMonth(), -1); render(); });
   $("nextMonth").addEventListener("click", () => { $("month").value = shiftMonth(currentMonth(), 1); render(); });
   $("search").addEventListener("input", render);
-  for (const id of ["filterCat", "filterClient", "groupBy"]) $(id).addEventListener("change", render);
+  for (const id of ["filterType", "filterCat", "filterClient", "groupBy"]) $(id).addEventListener("change", render);
   $("printBtn").addEventListener("click", () => window.print());
 
   function applyTheme() {
@@ -1047,27 +1354,42 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
+  // One row per item line; rows of the same bill share a "record" id. Payments are type "payment".
+  const EXPORT_COLS = ["type", "record", "date", "client", "vendor", "bill", "method", "note", "item", "quantity", "category", "amount"];
   $("exportBtn").addEventListener("click", () => {
-    if (!state.expenses.length) return toast("Nothing to export yet");
-    const rows = [["date", "client", "amount", "category", "item", "quantity", "vendor", "description", "method", "bill"]];
-    for (const e of [...state.expenses].sort((a, b) => a.date.localeCompare(b.date))) {
-      rows.push([e.date, clientName(e.clientId), e.amount, e.category, e.item, e.qty, e.vendor, e.note, e.method, e.bill]);
+    if (!state.expenses.length && !state.payments.length) return toast("Nothing to export yet");
+    const recs = [
+      ...state.expenses.map(e => ({ kind: "expense", r: e })),
+      ...state.payments.map(p => ({ kind: "payment", r: p }))
+    ].sort((a, b) => a.r.date.localeCompare(b.r.date) || (a.r.createdAt || 0) - (b.r.createdAt || 0));
+    const rows = [EXPORT_COLS];
+    for (const { kind, r } of recs) {
+      if (kind === "payment") {
+        rows.push(["payment", r.id, r.date, clientName(r.clientId), "", r.ref, r.method, r.note, "", "", "", r.amount]);
+      } else {
+        for (const l of r.lines) rows.push(["expense", r.id, r.date, clientName(r.clientId), r.vendor, r.bill, r.method, r.note, l.item, l.qty, l.category, l.amount]);
+      }
     }
-    download(`client-expenses-${todayISO()}.csv`, rows);
+    download(`client-records-${todayISO()}.csv`, rows);
   });
 
   $("exportMonthBtn").addEventListener("click", () => {
     const ym = currentMonth();
-    const monthExpenses = state.expenses.filter(e => monthOf(e.date) === ym);
-    if (!monthExpenses.length) return toast("Nothing recorded this month");
-    const usedCats = CATEGORIES.map(c => c.name).filter(n => monthExpenses.some(e => e.category === n));
-    const rows = [["client", ...usedCats, "total"]];
-    const ids = [...new Set(monthExpenses.map(e => e.clientId))].sort((a, b) => clientName(a).localeCompare(clientName(b)));
+    const monthExp = state.expenses.filter(e => monthOf(e.date) === ym);
+    const monthPay = state.payments.filter(p => monthOf(p.date) === ym);
+    if (!monthExp.length && !monthPay.length) return toast("Nothing recorded this month");
+    const allLines = monthExp.flatMap(e => e.lines.map(l => ({ ...l, clientId: e.clientId })));
+    const usedCats = CATEGORIES.map(c => c.name).filter(n => allLines.some(l => l.category === n));
+    const rows = [["client", "received", ...usedCats, "total spent", "balance"]];
+    const ids = [...new Set([...monthExp, ...monthPay].map(r => r.clientId))].sort((a, b) => clientName(a).localeCompare(clientName(b)));
     for (const id of ids) {
-      const mine = monthExpenses.filter(e => e.clientId === id);
-      rows.push([clientName(id), ...usedCats.map(n => sum(mine.filter(e => e.category === n)) || ""), sum(mine)]);
+      const lines = allLines.filter(l => l.clientId === id);
+      const rec = sum(monthPay.filter(p => p.clientId === id));
+      const sp = sum(lines);
+      rows.push([clientName(id), rec, ...usedCats.map(n => sum(lines.filter(l => l.category === n)) || ""), sp, round2(rec - sp)]);
     }
-    rows.push(["TOTAL", ...usedCats.map(n => sum(monthExpenses.filter(e => e.category === n))), sum(monthExpenses)]);
+    const rec = sum(monthPay), sp = sum(allLines);
+    rows.push(["TOTAL", rec, ...usedCats.map(n => sum(allLines.filter(l => l.category === n))), sp, round2(rec - sp)]);
     download(`client-summary-${ym}.csv`, rows);
   });
 
@@ -1103,48 +1425,72 @@
     const col = name => header.indexOf(name);
     if (col("date") < 0 || col("amount") < 0 || col("client") < 0) return toast("CSV needs 'date', 'client' and 'amount' columns");
 
-    const key = e => `${e.date}|${e.clientId}|${e.amount}|${e.category}|${e.item || ""}|${e.note}|${e.vendor}`;
-    const existing = new Set(state.expenses.map(key));
+    const expKey = e => `${e.date}|${e.clientId}|${e.amount}|${e.vendor}|${e.lines.map(l => `${l.item}:${l.amount}`).join("/")}`;
+    const payKey = p => `${p.date}|${p.clientId}|${p.amount}|${p.note}`;
+    const haveExp = new Set(state.expenses.map(expKey));
+    const havePay = new Set(state.payments.map(payKey));
+    const bills = new Map();
     let added = 0, skipped = 0;
-    for (const r of rows.slice(1)) {
+
+    rows.slice(1).forEach((r, i) => {
       const get = name => (col(name) >= 0 ? (r[col(name)] || "").trim() : "");
-      const amount = Math.round(parseFloat(get("amount").replace(/[^\d.\-]/g, "")) * 100) / 100;
+      const amount = round2(parseFloat(get("amount").replace(/[^\d.\-]/g, "")));
       const date = get("date");
       const name = get("client");
-      if (!(amount > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !name) { skipped++; continue; }
+      if (!(amount > 0) || !isDate(date) || !name) { skipped++; return; }
       const client = state.clients.find(c => c.name.toLowerCase() === name.toLowerCase()) || addClient(name);
-      const e = {
-        id: uid(), createdAt: Date.now(), clientId: client.id, date, amount,
-        category: catInfo(get("category") || itemCategory[get("item").toLowerCase()]).name,
-        item: get("item"), qty: get("quantity") || get("qty"), vendor: get("vendor"),
-        note: get("description") || get("note"), method: get("method") || "Other", bill: get("bill")
-      };
-      if (existing.has(key(e))) { skipped++; continue; }
-      existing.add(key(e));
+      if (get("type").toLowerCase() === "payment") {
+        const p = { id: uid(), createdAt: Date.now() + i, clientId: client.id, date, amount, method: get("method") || "Other", ref: get("bill") || get("ref"), note: get("note") };
+        if (havePay.has(payKey(p))) { skipped++; return; }
+        havePay.add(payKey(p));
+        state.payments.push(p);
+        added++;
+        return;
+      }
+      const key = get("record") || `row-${i}`;
+      if (!bills.has(key)) {
+        bills.set(key, {
+          id: uid(), createdAt: Date.now() + i, clientId: client.id, date,
+          vendor: get("vendor"), bill: get("bill"), method: get("method") || "Other",
+          note: get("note") || get("description"), lines: []
+        });
+      }
+      const item = get("item");
+      bills.get(key).lines.push({
+        item, qty: get("quantity") || get("qty"), amount,
+        category: catInfo(get("category") || itemCategory[item.toLowerCase()]).name
+      });
+    });
+    for (const e of bills.values()) {
+      e.amount = sum(e.lines);
+      if (haveExp.has(expKey(e))) { skipped++; continue; }
+      haveExp.add(expKey(e));
       state.expenses.push(e);
       added++;
     }
     save();
     render();
-    toast(`Imported ${plural(added, "expense")}${skipped ? `, skipped ${skipped}` : ""}`);
+    toast(`Imported ${plural(added, "record")}${skipped ? `, skipped ${skipped}` : ""}`);
   });
 
   $("clearBtn").addEventListener("click", async () => {
-    if (!state.clients.length && !state.expenses.length) return toast("Nothing to delete");
+    if (!state.clients.length && !state.expenses.length && !state.payments.length) return toast("Nothing to delete");
     const ok = await ask({
       title: "Delete everything?",
-      message: `This removes all ${plural(state.clients.length, "client")} and ${plural(state.expenses.length, "expense")}. Export a CSV first if you might need them.`,
+      message: `This removes all ${plural(state.clients.length, "client")}, ${plural(state.expenses.length, "expense")} and ${plural(state.payments.length, "payment")}. Export a CSV first if you might need them.`,
       okText: "Delete all", danger: true
     });
     if (!ok) return;
-    const snap = { clients: state.clients, expenses: state.expenses };
+    const snap = { clients: state.clients, expenses: state.expenses, payments: state.payments };
     state.clients = [];
     state.expenses = [];
+    state.payments = [];
     stopEdit();
+    stopEditPayment();
     stopEditClient();
     save();
     render();
-    toast("Everything deleted", () => { state.clients = snap.clients; state.expenses = snap.expenses; save(); render(); });
+    toast("Everything deleted", () => { Object.assign(state, snap); save(); render(); });
   });
 
   save();
