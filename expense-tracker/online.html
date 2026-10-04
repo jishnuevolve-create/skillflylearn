@@ -411,6 +411,15 @@
     .tb-row input { flex: 1; }
     .tb-pdf { margin-left: 0; }
   }
+
+  /* daily entry */
+  .date-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+  .date-head label { margin: 0; }
+  .date-chips { display: inline-flex; gap: 4px; }
+  .date-chip { border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); border-radius: 999px; padding: 1px 8px; font-size: .72rem; font-weight: 600; }
+  .date-chip:hover { color: var(--text); }
+  #todayBtn { font-weight: 600; }
+  @media (max-width: 600px) { .toolbar #dayCtl { grid-column: 1 / -1; } }
 </style>
 <header class="brand">
   <div class="brand-inner">
@@ -444,6 +453,7 @@
     <label class="tb-field"><span>Client</span><select id="filterClient"></select></label>
     <label class="tb-field"><span>Period</span>
       <select id="periodMode">
+        <option value="day" selected>Day</option>
         <option value="month">Month</option>
         <option value="last3">Last 3 months</option>
         <option value="fy">This financial year</option>
@@ -451,7 +461,15 @@
         <option value="custom">Custom dates</option>
       </select>
     </label>
-    <div class="tb-field" id="monthCtl"><span>Month</span>
+    <div class="tb-field" id="dayCtl"><span>Day</span>
+      <div class="tb-row">
+        <button type="button" id="prevDay" aria-label="Previous day">‹</button>
+        <input type="date" id="dayDate" aria-label="Day">
+        <button type="button" id="nextDay" aria-label="Next day">›</button>
+        <button type="button" id="todayBtn">Today</button>
+      </div>
+    </div>
+    <div class="tb-field" id="monthCtl" hidden><span>Month</span>
       <div class="tb-row">
         <button type="button" id="prevMonth" aria-label="Previous month">‹</button>
         <input type="month" id="month" aria-label="Month">
@@ -531,7 +549,7 @@
           </div>
           <div class="row-2">
             <div class="field">
-              <label for="date">Date</label>
+              <div class="date-head"><label for="date">Date</label><span class="date-chips"><button type="button" class="date-chip" data-for="date" data-shift="0">Today</button><button type="button" class="date-chip" data-for="date" data-shift="-1">Yesterday</button></span></div>
               <input id="date" type="date" required>
             </div>
             <div class="field">
@@ -603,7 +621,7 @@
               <input id="payAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="0">
             </div>
             <div class="field">
-              <label for="payDate">Date</label>
+              <div class="date-head"><label for="payDate">Date</label><span class="date-chips"><button type="button" class="date-chip" data-for="payDate" data-shift="0">Today</button><button type="button" class="date-chip" data-for="payDate" data-shift="-1">Yesterday</button></span></div>
               <input id="payDate" type="date" required>
             </div>
           </div>
@@ -700,7 +718,7 @@
     <div class="main">
       <section class="card" id="trendCard">
         <div class="trend-head">
-          <h2>Last 6 months</h2>
+          <h2 id="trendTitle">Last 6 months</h2>
           <div class="legend">
             <span><i style="background: var(--chart-in)"></i>Received <b id="legIn">₹0</b></span>
             <span><i style="background: var(--chart-out)"></i>Spent <b id="legOut">₹0</b></span>
@@ -1141,6 +1159,10 @@
       const fy = m >= 4 ? y : y - 1;
       return { mode, from: `${fy}-04-01`, to: `${fy + 1}-03-31`, label: `FY ${fy}–${String(fy + 1).slice(2)}`, slug: `FY${fy}-${String(fy + 1).slice(2)}` };
     }
+    if (mode === "day") {
+      const d = isDate($("dayDate").value) ? $("dayDate").value : todayISO();
+      return { mode, from: d, to: d, label: dayLabelFull(d), slug: d };
+    }
     if (mode === "all") return { mode, from: "0000-01-01", to: "9999-12-31", label: "All time", slug: "all-time" };
     if (mode === "custom") {
       let f = $("fromDate").value, t = $("toDate").value;
@@ -1156,6 +1178,7 @@
   function updatePeriodControls() {
     const mode = $("periodMode").value;
     $("monthCtl").hidden = mode !== "month";
+    $("dayCtl").hidden = mode !== "day";
     $("rangeCtl").hidden = mode !== "custom";
   }
   function setMonth(ym) {
@@ -1166,11 +1189,11 @@
   // After saving a record dated outside the period on screen, jump to its month so it's visible.
   function showDate(date) {
     const cur = getPeriod();
-    if (date < cur.from || date > cur.to) setMonth(monthOf(date));
+    if (date < cur.from || date > cur.to) { if (cur.mode === "day") setDay(date); else setMonth(monthOf(date)); }
   }
   $("periodMode").addEventListener("change", () => {
     if ($("periodMode").value === "custom" && !($("fromDate").value && $("toDate").value)) {
-      const cur = P && P.mode !== "all" ? P : { from: currentMonth() + "-01", to: monthEnd(currentMonth()) };
+      const cur = P && P.mode !== "all" && P.mode !== "day" ? P : { from: currentMonth() + "-01", to: monthEnd(currentMonth()) };
       $("fromDate").value = cur.from;
       $("toDate").value = cur.to;
     }
@@ -1178,6 +1201,62 @@
     render();
   });
   for (const id of ["fromDate", "toDate"]) $(id).addEventListener("change", render);
+  // ---------- day view (daily entry) ----------
+  const PERIOD_KEY = "client-expenses.period";
+  function shiftDay(iso, n) {
+    const [y, m, d] = iso.split("-").map(Number);
+    const t = new Date(y, m - 1, d + n);
+    return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+  }
+  const fmtDayShort = iso => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-IN", { day: "numeric", month: "short" }); };
+  const fmtDayLong = iso => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" }); };
+  function dayLabelFull(iso) {
+    const today = todayISO();
+    if (iso === today) return "Today · " + fmtDay(iso);
+    if (iso === shiftDay(today, -1)) return "Yesterday · " + fmtDay(iso);
+    return fmtDayLong(iso);
+  }
+  // New entries default to the day on screen, so missed bills can be added for yesterday.
+  const defaultEntryDate = () => (P && P.mode === "day" ? P.from : todayISO());
+  function setDay(iso) {
+    $("periodMode").value = "day";
+    $("dayDate").value = iso;
+    updatePeriodControls();
+    if (!editingId) $("date").value = iso;
+    if (!editingPayId) $("payDate").value = iso;
+    rememberPeriod();
+  }
+  function rememberPeriod() {
+    try { localStorage.setItem(PERIOD_KEY, $("periodMode").value); } catch (e) { /* not remembered */ }
+  }
+  $("prevDay").addEventListener("click", () => { setDay(shiftDay($("dayDate").value || todayISO(), -1)); render(); });
+  $("nextDay").addEventListener("click", () => { setDay(shiftDay($("dayDate").value || todayISO(), 1)); render(); });
+  $("todayBtn").addEventListener("click", () => { setDay(todayISO()); render(); });
+  $("dayDate").addEventListener("change", () => { if (isDate($("dayDate").value)) { setDay($("dayDate").value); render(); } });
+  $("periodMode").addEventListener("change", rememberPeriod);
+  // Today / Yesterday buttons beside the form dates
+  document.querySelectorAll(".date-chip").forEach(b => b.addEventListener("click", () => {
+    $(b.dataset.for).value = shiftDay(todayISO(), Number(b.dataset.shift));
+  }));
+  // If the app is left open overnight, move "today" along with the clock.
+  let lastToday = todayISO();
+  function checkNewDay() {
+    const now = todayISO();
+    if (now === lastToday) return;
+    const was = lastToday;
+    lastToday = now;
+    if ($("periodMode").value === "day" && $("dayDate").value === was) setDay(now);
+    if (!editingId && $("date").value === was) $("date").value = now;
+    if (!editingPayId && $("payDate").value === was) $("payDate").value = now;
+    render();
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewDay(); });
+  setInterval(checkNewDay, 60000);
+
+  $("dayDate").value = todayISO();
+  try { const saved = localStorage.getItem(PERIOD_KEY); if (saved && [...$("periodMode").options].some(o => o.value === saved)) $("periodMode").value = saved; } catch (e) { /* default */ }
+  updatePeriodControls();
+
 
   // ---------- render ----------
   function fillClientSelect(sel, archivedIdToKeep) {
@@ -1233,7 +1312,7 @@
     const prevSpent = P.mode === "month" ? sum(state.expenses.filter(e => monthOf(e.date) === shiftMonth(ym, -1) && (!fc || e.clientId === fc))) : 0;
     $("statOutSub").textContent = prevSpent > 0
       ? `${spent >= prevSpent ? "▲" : "▼"} ${Math.abs(((spent - prevSpent) / prevSpent) * 100).toFixed(0)}% vs last month`
-      : plural(monthExp.length, "bill");
+      : plural(monthExp.length, "bill") + (P.mode === "day" && P.from === todayISO() ? " today" : "");
     const bal = round2(received - spent);
     $("statBal").textContent = money(bal);
     $("statBal").className = "value " + balanceClass(bal);
@@ -1291,14 +1370,24 @@
 
   function renderTrend(ym) {
     const fClient = $("filterClient").value;
-    const months = [];
-    for (let i = 5; i >= 0; i--) months.push(shiftMonth(ym, -i));
-    const inPeriod = m => P && m + "-01" <= P.to && monthEnd(m) >= P.from;
-    const data = months.map(m => ({
-      m,
-      in: sum(state.payments.filter(p => monthOf(p.date) === m && (!fClient || p.clientId === fClient))),
-      out: sum(state.expenses.filter(e => monthOf(e.date) === m && (!fClient || e.clientId === fClient)))
-    }));
+    const daily = P && P.mode === "day";
+    // Day view: the 14 days up to the day shown. Otherwise: the 6 months up to this period.
+    const buckets = [];
+    if (daily) {
+      for (let i = 13; i >= 0; i--) {
+        const d = shiftDay(P.from, -i);
+        buckets.push({ from: d, to: d, label: d.slice(8) === "01" || i === 13 ? fmtDayShort(d) : String(Number(d.slice(8))), long: fmtDayLong(d), go: () => setDay(d), what: "day" });
+      }
+    } else {
+      for (let i = 5; i >= 0; i--) {
+        const m = shiftMonth(ym, -i);
+        buckets.push({ from: m + "-01", to: monthEnd(m), label: shortMonth(m), long: monthLabel(m), go: () => setMonth(m), what: "month" });
+      }
+    }
+    $("trendTitle").textContent = daily ? "Last 14 days" : "Last 6 months";
+    const inPeriod = b => P && b.from <= P.to && b.to >= P.from;
+    const inB = (b, r) => r.date >= b.from && r.date <= b.to && (!fClient || r.clientId === fClient);
+    const data = buckets.map(b => ({ ...b, in: sum(state.payments.filter(p => inB(b, p))), out: sum(state.expenses.filter(e => inB(b, e))) }));
     $("legIn").textContent = money(round2(data.reduce((s, d) => s + d.in, 0)));
     $("legOut").textContent = money(round2(data.reduce((s, d) => s + d.out, 0)));
 
@@ -1308,12 +1397,13 @@
     const s = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
     const W = Math.max(300, Math.round(box.clientWidth || 600)), H = 200, L = 50, R = 6, T = 10, B = 26;
     const pw = W - L - R, ph = H - T - B, gw = pw / data.length;
-    const bw = Math.max(6, Math.min(24, (gw - 16) / 2));
+    const bw = Math.max(3, Math.min(24, (gw - Math.min(16, gw * 0.3)) / 2 - 1));
     const max = niceMax(Math.max(...data.map(d => Math.max(d.in, d.out))));
     const y = v => T + ph - (v / max) * ph;
-    const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: "trend-svg", role: "group", "aria-label": "Money received and spent in each of the last six months" });
+    const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: "trend-svg", role: "group",
+      "aria-label": daily ? "Money received and spent on each of the last 14 days" : "Money received and spent in each of the last six months" });
     data.forEach((d, i) => {
-      if (inPeriod(d.m)) svg.append(s("rect", { x: L + gw * i + 2, y: T - 4, width: gw - 4, height: ph + B + 2, class: "hit", style: "fill: var(--surface-2)" }));
+      if (inPeriod(d)) svg.append(s("rect", { x: L + gw * i + 1, y: T - 4, width: gw - 2, height: ph + B + 2, class: "hit", style: "fill: var(--surface-2)" }));
     });
     for (let i = 0; i <= 4; i++) {
       const yy = y(max * i / 4);
@@ -1322,25 +1412,29 @@
       t.textContent = compactINR(max * i / 4);
       svg.append(t);
     }
-    // bars grow from the baseline with 4px rounded tops; 2px gap between the pair
+    // bars grow from the baseline with rounded tops; 2px gap between the pair
     const bar = (x, v) => {
       const top = y(v), base = y(0), h = base - top;
       if (!(h > 0.5)) return "";
       const r = Math.min(4, h, bw / 2);
       return `M${x},${base}V${top + r}Q${x},${top} ${x + r},${top}H${x + bw - r}Q${x + bw},${top} ${x + bw},${top + r}V${base}Z`;
     };
+    // with 14 day labels on a narrow screen, label every other day
+    const every = daily && gw < 30 ? 2 : 1;
     data.forEach((d, i) => {
       const cx = L + gw * i + gw / 2;
-      const g = s("g", { class: "tgroup" + (inPeriod(d.m) ? " sel" : ""), tabindex: "0", role: "button",
-        "aria-label": `${monthLabel(d.m)}: received ${money(d.in)}, spent ${money(d.out)}. Show this month.` });
-      g.append(s("rect", { x: L + gw * i + 2, y: T - 4, width: gw - 4, height: ph + B + 2, class: "hit" }));
+      const g = s("g", { class: "tgroup" + (inPeriod(d) ? " sel" : ""), tabindex: "0", role: "button",
+        "aria-label": `${d.long}: received ${money(d.in)}, spent ${money(d.out)}. Show this ${d.what}.` });
+      g.append(s("rect", { x: L + gw * i + 1, y: T - 4, width: gw - 2, height: ph + B + 2, class: "hit" }));
       const pIn = bar(cx - bw - 1, d.in), pOut = bar(cx + 1, d.out);
       if (pIn) g.append(s("path", { d: pIn, class: "bar-in" }));
       if (pOut) g.append(s("path", { d: pOut, class: "bar-out" }));
-      const lab = s("text", { x: cx, y: H - 8, class: "mlabel", "text-anchor": "middle" });
-      lab.textContent = shortMonth(d.m);
-      g.append(lab);
-      const go = () => { setMonth(d.m); render(); };
+      if ((data.length - 1 - i) % every === 0 || inPeriod(d)) {
+        const lab = s("text", { x: cx, y: H - 8, class: "mlabel", "text-anchor": "middle" });
+        lab.textContent = d.label;
+        g.append(lab);
+      }
+      const go = () => { d.go(); render(); };
       g.addEventListener("click", go);
       g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } });
       g.addEventListener("mouseenter", () => showTip(d, cx, W));
@@ -1356,7 +1450,7 @@
     if (!tip) return;
     const bal = round2(d.in - d.out);
     tip.replaceChildren(
-      el("strong", null, monthLabel(d.m)),
+      el("strong", null, d.long),
       el("div", null, el("span", null, el("i", { style: "background: var(--chart-in)" }), "Received"), el("span", null, money(d.in))),
       el("div", null, el("span", null, el("i", { style: "background: var(--chart-out)" }), "Spent"), el("span", null, money(d.out))),
       el("div", null, el("span", null, "Balance"), el("b", { class: bal < 0 ? "neg" : bal > 0 ? "pos" : "" }, money(bal)))
@@ -1663,7 +1757,7 @@
     $("form").reset();
     renderClientSelects();
     if ([...$("client").options].some(o => o.value === keepClient)) $("client").value = keepClient;
-    $("date").value = todayISO();
+    $("date").value = defaultEntryDate();
     resetLines();
     categoryTouched = false;
     $("formTitle").textContent = "Record expense";
@@ -1882,7 +1976,7 @@ If the image is not a bill or receipt, reply {"isBill": false}.`;
     $("payForm").reset();
     renderClientSelects();
     if ([...$("payClient").options].some(o => o.value === keepClient)) $("payClient").value = keepClient;
-    $("payDate").value = todayISO();
+    $("payDate").value = defaultEntryDate();
     $("payTitle").textContent = "Payment received";
     $("paySubmit").textContent = "Add payment";
     $("payCancel").hidden = true;
