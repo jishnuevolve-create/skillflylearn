@@ -142,12 +142,11 @@
   .lines-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
   .lines-head label { margin: 0; }
   .lines { display: grid; gap: 8px; margin-bottom: 8px; }
-  .line { border: 1px solid var(--border); border-radius: 10px; padding: 8px; display: grid; grid-template-columns: 1fr 110px; gap: 6px; background: var(--bg); }
-  .line input, .line select { padding: 7px 9px; font-size: .92rem; }
-  .line .row2 { grid-column: 1 / -1; display: grid; grid-template-columns: 96px 1fr auto; gap: 6px; }
+  .line { display: grid; grid-template-columns: 1fr 104px auto; gap: 6px; }
+  .line input { padding: 7px 9px; font-size: .92rem; }
   .line .remove { padding: 4px 10px; color: var(--muted); }
-  .lines-total { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .lines-total span:last-child { font-family: "Poppins", sans-serif; font-size: 1.1rem; }
+  .lines-count { color: var(--muted); font-size: .8rem; margin: -2px 0 12px; }
+  #amount { font-family: "Poppins", sans-serif; font-weight: 700; font-size: 1.05rem; }
 
   /* client summary table */
   .table-wrap { overflow-x: auto; }
@@ -345,7 +344,18 @@
           </div>
           <div class="lines" id="lines"></div>
           <datalist id="itemList"></datalist>
-          <div class="lines-total"><span id="linesCount">Total</span><span id="linesTotal">₹0</span></div>
+          <div class="lines-count" id="linesCount"></div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="amount">Total amount</label>
+              <input id="amount" type="number" inputmode="decimal" min="0.01" step="0.01" required placeholder="₹ bill total">
+            </div>
+            <div class="field">
+              <label for="category">Category</label>
+              <select id="category"></select>
+            </div>
+          </div>
 
           <div class="row-2">
             <div class="field">
@@ -552,20 +562,25 @@
   function round2(n) { return Math.round(n * 100) / 100; }
   function isDate(d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); }
 
-  // Older records had a single item on the expense itself; turn them into one-line bills.
+  // Older records kept the item on the expense itself, or an amount on every item line;
+  // now a bill is: a list of items (name + qty) with one total amount and one category.
   function normalizeExpense(e) {
     if (!e || typeof e.id !== "string" || !isDate(e.date)) return null;
-    let lines = Array.isArray(e.lines)
-      ? e.lines
-      : [{ item: e.item || "", qty: e.qty || "", category: e.category, amount: e.amount }];
-    lines = lines
-      .map(l => ({ item: String(l.item || ""), qty: String(l.qty || ""), category: catInfo(l.category).name, amount: round2(Number(l.amount)) }))
-      .filter(l => l.amount > 0);
-    if (!lines.length) return null;
+    const rawLines = Array.isArray(e.lines) ? e.lines : (e.item || e.qty ? [{ item: e.item, qty: e.qty, category: e.category }] : []);
+    let amount = round2(Number(e.amount));
+    if (!(amount > 0)) amount = round2(rawLines.reduce((s, l) => s + (Number(l.amount) || 0), 0));
+    if (!(amount > 0)) return null;
+    let category = e.category;
+    if (!category && rawLines.length) {
+      const biggest = [...rawLines].sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))[0];
+      category = biggest.category || itemCategory[String(biggest.item || "").toLowerCase()];
+    }
     return {
       id: e.id, createdAt: e.createdAt || 0, clientId: e.clientId, date: e.date,
       vendor: e.vendor || "", method: e.method || "Other", bill: e.bill || "", note: e.note || "",
-      lines, amount: round2(lines.reduce((s, l) => s + l.amount, 0))
+      lines: rawLines.map(l => ({ item: String(l.item || "").trim(), qty: String(l.qty || "").trim() })).filter(l => l.item || l.qty),
+      category: catInfo(category).name,
+      amount
     };
   }
   function normalizePayment(p) {
@@ -644,7 +659,7 @@
   }
   const sum = arr => round2(arr.reduce((s, e) => s + e.amount, 0));
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-  const lineLabel = l => [l.item || l.category, l.qty && `(${l.qty})`].filter(Boolean).join(" ");
+  const lineLabel = l => [l.item, l.qty && (l.item ? `(${l.qty})` : l.qty)].filter(Boolean).join(" ");
   function el(tag, attrs, ...children) {
     const node = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs || {})) {
@@ -704,32 +719,24 @@
   }
 
   // ---------- item lines (expense form) ----------
+  let categoryTouched = false;   // once the user picks a category, stop auto-filling it
+
   function addLine(data = {}) {
     const item = el("input", { type: "text", list: "itemList", maxlength: "60", placeholder: "Item, e.g. Plywood", "aria-label": "Item", class: "l-item" });
-    const amount = el("input", { type: "number", inputmode: "decimal", min: "0", step: "0.01", placeholder: "Amount", "aria-label": "Amount", class: "l-amount" });
     const qty = el("input", { type: "text", maxlength: "30", placeholder: "Qty", "aria-label": "Quantity", class: "l-qty" });
-    const cat = el("select", { "aria-label": "Category", class: "l-cat" });
-    for (const c of CATEGORIES) cat.append(el("option", { value: c.name }, `${c.icon} ${c.name}`));
     const remove = el("button", { type: "button", class: "remove", title: "Remove item", "aria-label": "Remove item" }, "✕");
-    const row = el("div", { class: "line" }, item, amount, el("div", { class: "row2" }, qty, cat, remove));
-
+    const row = el("div", { class: "line" }, item, qty, remove);
     item.value = data.item || "";
     qty.value = data.qty || "";
-    amount.value = data.amount || "";
-    cat.value = data.category ? catInfo(data.category).name : (itemCategory[(data.item || "").toLowerCase()] || "Materials");
-
-    item.addEventListener("input", () => {
-      const c = itemCategory[item.value.trim().toLowerCase()];
-      if (c) cat.value = c;
-    });
-    amount.addEventListener("input", updateLinesTotal);
+    item.addEventListener("input", () => { autoCategory(); updateItemCount(); });
     remove.addEventListener("click", () => {
       if ($("lines").children.length > 1) row.remove();
-      else { item.value = ""; qty.value = ""; amount.value = ""; cat.value = "Materials"; }
-      updateLinesTotal();
+      else { item.value = ""; qty.value = ""; }
+      autoCategory();
+      updateItemCount();
     });
     $("lines").append(row);
-    updateLinesTotal();
+    updateItemCount();
     return row;
   }
   function resetLines(lines) {
@@ -741,26 +748,27 @@
     for (const row of $("lines").children) {
       const item = row.querySelector(".l-item").value.trim();
       const qty = row.querySelector(".l-qty").value.trim();
-      const raw = row.querySelector(".l-amount").value.trim();
-      if (!item && !qty && !raw) continue;
-      const amount = round2(parseFloat(raw));
-      if (!(amount > 0)) return { error: `Enter an amount for "${item || "each item"}"`, focus: row.querySelector(".l-amount") };
-      lines.push({ item, qty, category: row.querySelector(".l-cat").value, amount });
+      if (item || qty) lines.push({ item, qty });
     }
-    return { lines };
+    return lines;
   }
-  function updateLinesTotal() {
-    let total = 0, count = 0;
-    for (const row of $("lines").children) {
-      const a = parseFloat(row.querySelector(".l-amount").value);
-      if (a > 0) { total += a; count++; }
+  // Category follows the first item we recognise, until the user chooses one themselves.
+  function autoCategory() {
+    if (categoryTouched) return;
+    for (const l of readLines()) {
+      const c = itemCategory[l.item.toLowerCase()];
+      if (c) { $("category").value = c; return; }
     }
-    $("linesCount").textContent = count ? `Total · ${plural(count, "item")}` : "Total";
-    $("linesTotal").textContent = money(total);
+  }
+  function updateItemCount() {
+    const n = readLines().filter(l => l.item).length;
+    $("linesCount").textContent = n ? plural(n, "item") + " on this bill" : "";
   }
 
   // ---------- setup ----------
   for (const c of CATEGORIES) for (const it of c.items) $("itemList").append(el("option", { value: it }, c.name));
+  for (const c of CATEGORIES) $("category").append(el("option", { value: c.name }, `${c.icon} ${c.name}`));
+  $("category").addEventListener("change", () => { categoryTouched = true; });
   $("filterCat").append(el("option", { value: "" }, "All categories"));
   for (const c of CATEGORIES) $("filterCat").append(el("option", { value: c.name }, c.name));
 
@@ -839,7 +847,7 @@
     $("statBal").className = "value " + balanceClass(bal);
 
     const byCat = {};
-    for (const e of monthExp) for (const l of e.lines) byCat[l.category] = (byCat[l.category] || 0) + l.amount;
+    for (const e of monthExp) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
     const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
     if (cats.length) {
       $("statCat").textContent = `${catInfo(cats[0][0]).icon} ${cats[0][0]}`;
@@ -969,10 +977,10 @@
 
     const matches = ({ kind, r }) => {
       if (fClient && r.clientId !== fClient) return false;
-      if (fCat && !(kind === "expense" && r.lines.some(l => l.category === fCat))) return false;
+      if (fCat && !(kind === "expense" && r.category === fCat)) return false;
       if (!q) return true;
       const text = kind === "expense"
-        ? [r.vendor, r.bill, r.note, r.method, ...r.lines.flatMap(l => [l.item, l.qty, l.category])]
+        ? [r.vendor, r.bill, r.note, r.method, r.category, ...r.lines.flatMap(l => [l.item, l.qty])]
         : ["payment received", r.note, r.ref, r.method];
       return [clientName(r.clientId), ...text].some(v => (v || "").toLowerCase().includes(q));
     };
@@ -1012,27 +1020,24 @@
   }
 
   function expenseRow(e, groupByClient) {
-    const cats = [...new Set(e.lines.map(l => l.category))];
-    const icon = cats.length === 1 ? catInfo(cats[0]).icon : "🧾";
-    const color = cats.length === 1 ? catInfo(cats[0]).color : "#8A8FA8";
-    const single = e.lines.length === 1;
-    const title = e.vendor || (single ? lineLabel(e.lines[0]) : plural(e.lines.length, "item"));
+    const c = catInfo(e.category);
+    const labels = e.lines.map(lineLabel).filter(Boolean);
+    const title = e.vendor || (labels.length === 1 ? labels[0] : labels.length ? plural(labels.length, "item") : e.category);
     const meta = [
       groupByClient ? dayLabel(e.date) : clientName(e.clientId),
-      single ? e.lines[0].category : plural(e.lines.length, "item"),
+      e.category,
       e.method,
       e.bill ? `Bill ${e.bill}` : null,
       e.note
     ].filter(Boolean).join(" · ");
-    // Show the item breakdown unless the title already says everything.
-    const showLines = !(single && !e.vendor);
+    // List the items unless the title already is the only item.
+    const showItems = labels.length > 1 || (labels.length === 1 && e.vendor);
     return el("div", { class: "item" },
-      el("div", { class: "dot", style: `background:${color}22` }, icon),
+      el("div", { class: "dot", style: `background:${c.color}22` }, c.icon),
       el("div", null,
         el("div", { class: "title" }, title),
         el("div", { class: "meta" }, meta),
-        showLines ? el("div", { class: "lview" }, ...e.lines.map(l =>
-          el("div", null, el("span", null, `${catInfo(l.category).icon} ${lineLabel(l)}`), el("span", null, money(l.amount))))) : null
+        showItems ? el("div", { class: "lview" }, ...labels.map(t => el("div", null, el("span", null, "• " + t)))) : null
       ),
       el("div", { class: "amount" }, money(e.amount)),
       el("div", { class: "actions" },
@@ -1075,12 +1080,12 @@
     }
     const date = $("date").value;
     if (!isDate(date)) return toast("Pick a date");
-    const { lines, error, focus } = readLines();
-    if (error) { toast(error); focus.focus(); return; }
-    if (!lines.length) { toast("Add at least one item with an amount"); $("lines").querySelector(".l-item").focus(); return; }
+    const lines = readLines();
+    const amount = round2(parseFloat($("amount").value));
+    if (!(amount > 0)) { toast("Enter the total amount"); $("amount").focus(); return; }
     const data = {
-      clientId, date, lines,
-      amount: round2(lines.reduce((s, l) => s + l.amount, 0)),
+      clientId, date, lines, amount,
+      category: $("category").value,
       vendor: $("vendor").value.trim(),
       bill: $("bill").value.trim(),
       method: $("method").value,
@@ -1095,8 +1100,9 @@
     } else {
       state.expenses.push({ id: uid(), createdAt: Date.now(), ...data });
       toast(`Added ${money(data.amount)} for ${clientName(clientId)}`);
-      for (const id of ["vendor", "bill", "note"]) $(id).value = "";
+      for (const id of ["vendor", "bill", "note", "amount"]) $(id).value = "";
       resetLines();
+      categoryTouched = false;
       $("vendor").focus();
     }
     save();
@@ -1118,6 +1124,10 @@
     $("method").value = e.method || "Other";
     $("note").value = e.note || "";
     resetLines(e.lines);
+    $("amount").value = e.amount;
+    $("category").value = e.category;
+    categoryTouched = true;
+    updateItemCount();
     $("formTitle").textContent = "Edit expense";
     $("submitBtn").textContent = "Save changes";
     $("cancelEdit").hidden = false;
@@ -1131,6 +1141,7 @@
     if ([...$("client").options].some(o => o.value === keepClient)) $("client").value = keepClient;
     $("date").value = todayISO();
     resetLines();
+    categoryTouched = false;
     $("formTitle").textContent = "Record expense";
     $("submitBtn").textContent = "Add expense";
     $("cancelEdit").hidden = true;
@@ -1354,8 +1365,15 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  // One row per item line; rows of the same bill share a "record" id. Payments are type "payment".
-  const EXPORT_COLS = ["type", "record", "date", "client", "vendor", "bill", "method", "note", "item", "quantity", "category", "amount"];
+  // One row per bill (items joined with "; ") and one row per payment.
+  const EXPORT_COLS = ["type", "date", "client", "vendor", "bill", "method", "note", "category", "items", "amount"];
+  const itemsText = lines => lines.map(lineLabel).filter(Boolean).join("; ");
+  function parseItems(text) {
+    return text.split(";").map(t => t.trim()).filter(Boolean).map(t => {
+      const m = t.match(/^(.*?)\s*\(([^()]*)\)$/);
+      return m ? { item: m[1].trim(), qty: m[2].trim() } : { item: t, qty: "" };
+    });
+  }
   $("exportBtn").addEventListener("click", () => {
     if (!state.expenses.length && !state.payments.length) return toast("Nothing to export yet");
     const recs = [
@@ -1365,9 +1383,9 @@
     const rows = [EXPORT_COLS];
     for (const { kind, r } of recs) {
       if (kind === "payment") {
-        rows.push(["payment", r.id, r.date, clientName(r.clientId), "", r.ref, r.method, r.note, "", "", "", r.amount]);
+        rows.push(["payment", r.date, clientName(r.clientId), "", r.ref, r.method, r.note, "", "", r.amount]);
       } else {
-        for (const l of r.lines) rows.push(["expense", r.id, r.date, clientName(r.clientId), r.vendor, r.bill, r.method, r.note, l.item, l.qty, l.category, l.amount]);
+        rows.push(["expense", r.date, clientName(r.clientId), r.vendor, r.bill, r.method, r.note, r.category, itemsText(r.lines), r.amount]);
       }
     }
     download(`client-records-${todayISO()}.csv`, rows);
@@ -1378,7 +1396,7 @@
     const monthExp = state.expenses.filter(e => monthOf(e.date) === ym);
     const monthPay = state.payments.filter(p => monthOf(p.date) === ym);
     if (!monthExp.length && !monthPay.length) return toast("Nothing recorded this month");
-    const allLines = monthExp.flatMap(e => e.lines.map(l => ({ ...l, clientId: e.clientId })));
+    const allLines = monthExp;
     const usedCats = CATEGORIES.map(c => c.name).filter(n => allLines.some(l => l.category === n));
     const rows = [["client", "received", ...usedCats, "total spent", "balance"]];
     const ids = [...new Set([...monthExp, ...monthPay].map(r => r.clientId))].sort((a, b) => clientName(a).localeCompare(clientName(b)));
@@ -1425,7 +1443,7 @@
     const col = name => header.indexOf(name);
     if (col("date") < 0 || col("amount") < 0 || col("client") < 0) return toast("CSV needs 'date', 'client' and 'amount' columns");
 
-    const expKey = e => `${e.date}|${e.clientId}|${e.amount}|${e.vendor}|${e.lines.map(l => `${l.item}:${l.amount}`).join("/")}`;
+    const expKey = e => `${e.date}|${e.clientId}|${e.amount}|${e.vendor}|${itemsText(e.lines)}`;
     const payKey = p => `${p.date}|${p.clientId}|${p.amount}|${p.note}`;
     const haveExp = new Set(state.expenses.map(expKey));
     const havePay = new Set(state.payments.map(payKey));
@@ -1447,22 +1465,22 @@
         added++;
         return;
       }
+      // Older exports had one row per item with a shared "record" id; those rows are merged into one bill.
       const key = get("record") || `row-${i}`;
+      const lines = col("items") >= 0 ? parseItems(get("items")) : (get("item") || get("quantity") ? [{ item: get("item"), qty: get("quantity") || get("qty") }] : []);
       if (!bills.has(key)) {
         bills.set(key, {
           id: uid(), createdAt: Date.now() + i, clientId: client.id, date,
           vendor: get("vendor"), bill: get("bill"), method: get("method") || "Other",
-          note: get("note") || get("description"), lines: []
+          note: get("note") || get("description"), lines: [], amount: 0,
+          category: catInfo(get("category") || itemCategory[(lines[0] && lines[0].item || "").toLowerCase()]).name
         });
       }
-      const item = get("item");
-      bills.get(key).lines.push({
-        item, qty: get("quantity") || get("qty"), amount,
-        category: catInfo(get("category") || itemCategory[item.toLowerCase()]).name
-      });
+      const bill = bills.get(key);
+      bill.lines.push(...lines);
+      bill.amount = round2(bill.amount + amount);
     });
     for (const e of bills.values()) {
-      e.amount = sum(e.lines);
       if (haveExp.has(expKey(e))) { skipped++; continue; }
       haveExp.add(expKey(e));
       state.expenses.push(e);
