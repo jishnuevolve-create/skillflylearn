@@ -229,13 +229,6 @@
       <input type="month" id="month" aria-label="Month">
       <button id="prevMonth" aria-label="Previous month">‹</button>
       <button id="nextMonth" aria-label="Next month">›</button>
-      <select id="currency" aria-label="Currency">
-        <option value="INR">₹ INR</option>
-        <option value="USD">$ USD</option>
-        <option value="EUR">€ EUR</option>
-        <option value="GBP">£ GBP</option>
-        <option value="AED">AED</option>
-      </select>
       <button id="printBtn" type="button">Print / PDF</button>
       <button id="themeBtn" aria-label="Toggle theme">◐</button>
     </div>
@@ -285,17 +278,28 @@
             <input id="date" type="date" required>
           </div>
         </div>
+        <div class="row-2" style="grid-template-columns: 1.6fr 1fr;">
+          <div class="field">
+            <label for="item">Item</label>
+            <input id="item" type="text" list="itemList" maxlength="60" placeholder="e.g. Plywood">
+            <datalist id="itemList"></datalist>
+          </div>
+          <div class="field">
+            <label for="qty">Quantity</label>
+            <input id="qty" type="text" maxlength="30" placeholder="e.g. 12 sheets">
+          </div>
+        </div>
         <div class="field">
           <label for="category">Category</label>
           <select id="category" required></select>
         </div>
         <div class="field">
           <label for="vendor">Vendor / paid to</label>
-          <input id="vendor" type="text" maxlength="80" placeholder="e.g. Sharma Plywood">
+          <input id="vendor" type="text" maxlength="80" placeholder="e.g. vendor, shop or contractor name">
         </div>
         <div class="field">
-          <label for="note">Description</label>
-          <input id="note" type="text" maxlength="160" placeholder="e.g. 12 sheets 18mm BWP ply for kitchen">
+          <label for="note">Description / work area</label>
+          <input id="note" type="text" maxlength="160" placeholder="e.g. 18mm BWP ply for kitchen cabinets">
         </div>
         <div class="row-2">
           <div class="field">
@@ -304,9 +308,9 @@
               <option>UPI</option>
               <option>Cash</option>
               <option>Bank transfer</option>
-              <option>Debit card</option>
-              <option>Credit card</option>
               <option>Cheque</option>
+              <option>Company card</option>
+              <option>Paid by client</option>
               <option>Other</option>
             </select>
           </div>
@@ -392,22 +396,25 @@
 
   const STORE_KEY = "client-expenses.v1";
   const CATEGORIES = [
-    { name: "Materials",           icon: "🪵", color: "#B07A3F" },
-    { name: "Furniture",           icon: "🛋️", color: "#7A4FD8" },
-    { name: "Lighting & Electrical", icon: "💡", color: "#D8A12A" },
-    { name: "Fabric & Upholstery", icon: "🧵", color: "#D8457A" },
-    { name: "Paint & Finishes",    icon: "🎨", color: "#2FA36B" },
-    { name: "Hardware & Fittings", icon: "🔩", color: "#5B6B8A" },
-    { name: "Decor & Accessories", icon: "🖼️", color: "#FF7A2F" },
-    { name: "Plumbing & Sanitary", icon: "🚿", color: "#2A7FD8" },
-    { name: "Labour & Contractors", icon: "👷", color: "#C2562A" },
-    { name: "Transport & Delivery", icon: "🚚", color: "#1FA8A0" },
-    { name: "Site Visit & Travel", icon: "🚗", color: "#4F6BD8" },
-    { name: "Printing & Samples",  icon: "📐", color: "#A84FD8" },
-    { name: "Other",               icon: "📦", color: "#8A8FA8" }
+    { name: "Materials", icon: "🪵", color: "#B07A3F", items: ["Plywood", "MDF board", "HDHMR board", "Particle board", "Block board", "Laminate", "Veneer", "Acrylic sheet", "Glass", "Mirror", "Tiles", "Marble", "Granite", "Quartz countertop", "Wooden flooring", "Vinyl flooring", "Gypsum board", "False ceiling material", "Wallpaper", "Wall panels", "Adhesive", "Edge banding", "Cement & sand"] },
+    { name: "Furniture", icon: "🛋️", color: "#7A4FD8", items: ["Sofa", "Bed", "Mattress", "Dining table", "Chairs", "Wardrobe", "Modular kitchen", "TV unit", "Study table", "Shoe rack", "Side table", "Coffee table", "Office workstation", "Custom furniture"] },
+    { name: "Lighting & Electrical", icon: "💡", color: "#D8A12A", items: ["Ceiling lights", "Pendant lights", "Chandelier", "Wall lights", "LED strip", "Profile lights", "Spot lights", "Switches & sockets", "Wiring & cables", "Ceiling fan", "DB & MCB"] },
+    { name: "Fabric & Upholstery", icon: "🧵", color: "#D8457A", items: ["Curtains", "Blinds", "Curtain rods & tracks", "Upholstery fabric", "Cushions", "Rugs & carpets", "Foam", "Headboard upholstery"] },
+    { name: "Paint & Finishes", icon: "🎨", color: "#2FA36B", items: ["Interior paint", "Exterior paint", "Primer", "Wall putty", "Texture paint", "PU polish", "Duco paint", "Melamine polish", "Wood stain"] },
+    { name: "Hardware & Fittings", icon: "🔩", color: "#5B6B8A", items: ["Hinges", "Drawer channels", "Handles & knobs", "Locks", "Kitchen accessories", "Wardrobe accessories", "Tandem boxes", "Lift-up fittings", "Screws & nails", "Door stoppers", "Glass fittings"] },
+    { name: "Decor & Accessories", icon: "🖼️", color: "#FF7A2F", items: ["Artwork", "Wall decor", "Decorative mirror", "Plants & planters", "Vases & showpieces", "Clocks", "Table decor", "Photo frames"] },
+    { name: "Plumbing & Sanitary", icon: "🚿", color: "#2A7FD8", items: ["Taps & mixers", "Wash basin", "Kitchen sink", "WC", "Shower", "Bathroom accessories", "Pipes & fittings", "Water heater"] },
+    { name: "Appliances", icon: "🔌", color: "#3FA8D8", items: ["Chimney", "Hob", "Built-in oven", "Microwave", "Refrigerator", "Dishwasher", "Air conditioner", "Water purifier"] },
+    { name: "Labour & Contractors", icon: "👷", color: "#C2562A", items: ["Carpenter", "Electrician", "Plumber", "Painter", "Mason", "Tile layer", "Polisher", "False ceiling work", "Helper", "Installation charges", "Civil work"] },
+    { name: "Transport & Delivery", icon: "🚚", color: "#1FA8A0", items: ["Material transport", "Loading & unloading", "Courier", "Delivery charges"] },
+    { name: "Site Visit & Travel", icon: "🚗", color: "#4F6BD8", items: ["Fuel", "Cab / auto", "Parking & toll", "Site visit"] },
+    { name: "Design & Printing", icon: "📐", color: "#A84FD8", items: ["Drawing prints", "3D renders", "Material samples", "Site measurement", "Permits & approvals"] },
+    { name: "Other", icon: "📦", color: "#8A8FA8", items: ["Site cleaning", "Debris removal", "Miscellaneous"] }
   ];
   const catByName = Object.fromEntries(CATEGORIES.map(c => [c.name, c]));
   const catInfo = name => catByName[name] || catByName.Other;
+  const itemCategory = {};
+  for (const c of CATEGORIES) for (const it of c.items) itemCategory[it.toLowerCase()] = c.name;
 
   // ---------- state ----------
   let state = load();
@@ -416,7 +423,7 @@
   let showArchived = false;
 
   function load() {
-    const fallback = { clients: [], expenses: [], currency: "INR", theme: "" };
+    const fallback = { clients: [], expenses: [], theme: "" };
     try {
       const raw = localStorage.getItem(STORE_KEY);
       if (!raw) return fallback;
@@ -426,7 +433,6 @@
       return {
         clients,
         expenses: Array.isArray(data.expenses) ? data.expenses.filter(e => validExpense(e) && ids.has(e.clientId)) : [],
-        currency: data.currency || "INR",
         theme: data.theme || ""
       };
     } catch (e) {
@@ -457,8 +463,7 @@
   }
   function money(n) {
     try {
-      const locale = state.currency === "INR" ? "en-IN" : undefined;
-      return new Intl.NumberFormat(locale, { style: "currency", currency: state.currency, maximumFractionDigits: 2 }).format(n);
+      return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(n);
     } catch (e) {
       return n.toFixed(2);
     }
@@ -498,12 +503,16 @@
 
   // ---------- setup ----------
   for (const c of CATEGORIES) $("category").append(el("option", { value: c.name }, `${c.icon} ${c.name}`));
+  for (const c of CATEGORIES) for (const it of c.items) $("itemList").append(el("option", { value: it }, c.name));
+  $("item").addEventListener("input", () => {
+    const cat = itemCategory[$("item").value.trim().toLowerCase()];
+    if (cat) $("category").value = cat;
+  });
   $("filterCat").append(el("option", { value: "" }, "All categories"));
   for (const c of CATEGORIES) $("filterCat").append(el("option", { value: c.name }, c.name));
 
   $("month").value = monthOf(todayISO());
   $("date").value = todayISO();
-  $("currency").value = state.currency;
   applyTheme();
 
   // ---------- render ----------
@@ -678,7 +687,7 @@
     const fc = $("filterCat").value;
     const shown = monthExpenses
       .filter(e => (!fClient || e.clientId === fClient) && (!fc || e.category === fc))
-      .filter(e => !q || [e.note, e.vendor, e.bill, e.category, e.method, clientName(e.clientId)].some(v => (v || "").toLowerCase().includes(q)))
+      .filter(e => !q || [e.item, e.note, e.vendor, e.bill, e.category, e.method, clientName(e.clientId)].some(v => (v || "").toLowerCase().includes(q)))
       .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
 
     const list = $("list");
@@ -717,7 +726,8 @@
         group.append(el("div", { class: "item" },
           el("div", { class: "dot", style: `background:${c.color}22` }, c.icon),
           el("div", null,
-            el("div", { class: "title" }, e.note || e.vendor || e.category),
+            el("div", { class: "title" }, [e.item, e.qty && `(${e.qty})`].filter(Boolean).join(" ") || e.note || e.vendor || e.category),
+            e.item && e.note ? el("div", { class: "meta" }, e.note) : null,
             el("div", { class: "meta" }, meta)
           ),
           el("div", { class: "amount" }, money(e.amount)),
@@ -746,6 +756,8 @@
     const data = {
       clientId, amount, date,
       category: $("category").value,
+      item: $("item").value.trim(),
+      qty: $("qty").value.trim(),
       vendor: $("vendor").value.trim(),
       note: $("note").value.trim(),
       method: $("method").value,
@@ -760,7 +772,7 @@
     } else {
       state.expenses.push({ id: uid(), createdAt: Date.now(), ...data });
       toast(`Added ${money(amount)} for ${clientName(clientId)}`);
-      for (const id of ["amount", "vendor", "note", "bill"]) $(id).value = "";
+      for (const id of ["amount", "item", "qty", "vendor", "note", "bill"]) $(id).value = "";
       $("amount").focus();
     }
     save();
@@ -777,6 +789,8 @@
     $("amount").value = e.amount;
     $("date").value = e.date;
     $("category").value = catInfo(e.category).name;
+    $("item").value = e.item || "";
+    $("qty").value = e.qty || "";
     $("vendor").value = e.vendor || "";
     $("note").value = e.note || "";
     $("method").value = e.method || "Other";
@@ -914,7 +928,6 @@
   $("nextMonth").addEventListener("click", () => { $("month").value = shiftMonth(currentMonth(), 1); render(); });
   $("search").addEventListener("input", render);
   for (const id of ["filterCat", "filterClient", "groupBy"]) $(id).addEventListener("change", render);
-  $("currency").addEventListener("change", () => { state.currency = $("currency").value; save(); render(); });
   $("printBtn").addEventListener("click", () => window.print());
 
   function applyTheme() {
@@ -945,9 +958,9 @@
 
   $("exportBtn").addEventListener("click", () => {
     if (!state.expenses.length) return toast("Nothing to export yet");
-    const rows = [["date", "client", "amount", "category", "vendor", "description", "method", "bill"]];
+    const rows = [["date", "client", "amount", "category", "item", "quantity", "vendor", "description", "method", "bill"]];
     for (const e of [...state.expenses].sort((a, b) => a.date.localeCompare(b.date))) {
-      rows.push([e.date, clientName(e.clientId), e.amount, e.category, e.vendor, e.note, e.method, e.bill]);
+      rows.push([e.date, clientName(e.clientId), e.amount, e.category, e.item, e.qty, e.vendor, e.note, e.method, e.bill]);
     }
     download(`client-expenses-${todayISO()}.csv`, rows);
   });
@@ -999,7 +1012,7 @@
     const col = name => header.indexOf(name);
     if (col("date") < 0 || col("amount") < 0 || col("client") < 0) return toast("CSV needs 'date', 'client' and 'amount' columns");
 
-    const key = e => `${e.date}|${e.clientId}|${e.amount}|${e.category}|${e.note}|${e.vendor}`;
+    const key = e => `${e.date}|${e.clientId}|${e.amount}|${e.category}|${e.item || ""}|${e.note}|${e.vendor}`;
     const existing = new Set(state.expenses.map(key));
     let added = 0, skipped = 0;
     for (const r of rows.slice(1)) {
@@ -1011,7 +1024,8 @@
       const client = state.clients.find(c => c.name.toLowerCase() === name.toLowerCase()) || addClient(name);
       const e = {
         id: uid(), createdAt: Date.now(), clientId: client.id, date, amount,
-        category: catInfo(get("category")).name, vendor: get("vendor"),
+        category: catInfo(get("category") || itemCategory[get("item").toLowerCase()]).name,
+        item: get("item"), qty: get("quantity") || get("qty"), vendor: get("vendor"),
         note: get("description") || get("note"), method: get("method") || "Other", bill: get("bill")
       };
       if (existing.has(key(e))) { skipped++; continue; }
