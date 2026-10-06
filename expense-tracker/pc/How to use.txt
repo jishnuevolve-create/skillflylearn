@@ -2,7 +2,7 @@ VG CONSTRUCTIONS - EXPENSE APP (PC VERSION)
 ===========================================
 
 WHAT'S IN THIS FOLDER
-  VG Expenses.html       The app itself
+  index.html             The app itself
   Open VG Expenses.bat   Double-click to open the app in its own window
   lib\                   The PDF tool (lets "Download PDF" work without internet)
   How to use.txt         This file
@@ -20,8 +20,8 @@ SET IT UP (one time)
 
 EVERY DAY
   Always open the app the same way (the .bat file or its desktop shortcut).
-  Your records are saved inside the browser on this PC. If you open the
-  .html file in a different browser, it starts empty.
+  Your records are saved inside the browser on this PC. If you open
+  index.html in a different browser, it starts empty.
 
 BACKUP (please do this every week)
   In the app, go to Data > "Export all (CSV)" and keep the file somewhere safe
